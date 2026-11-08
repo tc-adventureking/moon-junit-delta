@@ -35,6 +35,8 @@ node bin/junit-delta.mjs compare --baseline examples/history.xml --baseline exam
 
 ## MoonBit API
 
+三个完整业务示例见 [使用场景](examples/scenarios/README.md)：合并请求回归门禁、重试与历史波动审查、分片迁移完整性检查。每个场景都有输入、命令、完整输出、预期退出码和后续动作。
+
 在本地 workspace 中将本模块与消费者并列，消费者依赖 `tc-adventureking/junit_delta@0.1.0`，包中导入别名 `@delta`。独立包验证脚本会从新生成的源码包执行这一流程。
 
 ```moonbit

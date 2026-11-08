@@ -1,0 +1,4 @@
+<testsuite name="api">
+  <testcase classname="api" name="transport" time="0.1"><error message="old intermittent timeout"/></testcase>
+  <testcase classname="api" name="cache" time="0.1"></testcase>
+</testsuite>

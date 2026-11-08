@@ -1,0 +1,5 @@
+<testsuite name="api">
+  <testcase classname="api" name="parse" time="0.1"></testcase>
+  <testcase classname="api" name="store" time="0.2"></testcase>
+  <testcase classname="api" name="audit" time="0.3"></testcase>
+</testsuite>

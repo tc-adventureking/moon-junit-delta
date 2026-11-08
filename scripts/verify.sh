@@ -8,6 +8,7 @@ moon test --target all --deny-warn
 moon info
 moon build cmd/junit_delta --target js --release --deny-warn
 node scripts/e2e.mjs
+node scripts/scenarios.mjs
 node scripts/contract.mjs
 node scripts/schema.mjs
 node scripts/package-cli.mjs

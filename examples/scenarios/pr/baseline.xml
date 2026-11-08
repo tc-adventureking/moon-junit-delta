@@ -1,0 +1,5 @@
+<testsuite name="api">
+  <testcase classname="api" name="login" time="0.1"></testcase>
+  <testcase classname="api" name="refresh" time="0.2"><failure message="old bug"/></testcase>
+  <testcase classname="api" name="logout" time="0.1"></testcase>
+</testsuite>
