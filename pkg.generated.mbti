@@ -1,0 +1,62 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "tc-adventureking/junit_delta"
+
+// Values
+pub fn merge_reports(Array[Report], duplicates? : DuplicatePolicy) -> Report raise InputError
+
+pub fn parse_duration(String) -> Int64? raise InputError
+
+pub fn parse_report(String, source? : String, duplicates? : DuplicatePolicy) -> Report raise InputError
+
+// Errors
+pub(all) suberror InputError {
+  InvalidInput(String)
+} derive(Eq, Show)
+
+// Types and methods
+type CaseBuilder
+
+pub struct Diagnostic {
+  source : String
+  code : String
+  message : String
+} derive(Eq, Show)
+
+pub(all) enum DuplicatePolicy {
+  Reject
+  Attempts
+} derive(Eq, Show)
+
+pub(all) enum Outcome {
+  Passed
+  Failed
+  Errored
+  Skipped
+} derive(Eq, Show)
+pub fn Outcome::label(Self) -> String
+
+pub struct Report {
+  cases : Array[TestCase]
+  diagnostics : Array[Diagnostic]
+} derive(Eq, Show)
+
+pub struct TestCase {
+  id : TestId
+  outcome : Outcome
+  attempts : Int32
+  flaky : Bool
+  time_us : Int64?
+  message : String
+  source : String
+} derive(Eq, Show)
+
+pub(all) enum TestId {
+  Class(String, String)
+  SuitePath(Array[String], String)
+} derive(Eq, Show)
+pub fn TestId::key(Self) -> String
+pub fn TestId::to_json(Self) -> Json
+
+// Type aliases
+
+// Traits

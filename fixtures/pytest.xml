@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites><testsuite name="pytest" errors="1" failures="1" skipped="1" tests="4" time="0.053">
+  <testcase classname="test_math" name="test_sum[1-2]" time="0.001"/>
+  <testcase classname="test_math" name="test_negative" time="0.002"><failure message="assert -1 == 1">test_math.py:4: AssertionError</failure></testcase>
+  <testcase classname="test_math" name="test_optional" time="0"><skipped type="pytest.skip" message="optional"/></testcase>
+  <testcase classname="test_math" name="test_fixture" time="0.050"><error message="failed on setup">fixture unavailable</error></testcase>
+</testsuite></testsuites>

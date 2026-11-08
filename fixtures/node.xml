@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+	<testsuite name="node fixture" time="0.002486" disabled="0" errors="0" tests="2" failures="0" skipped="1" timestamp="2026-11-08T18:20:27.894Z" hostname="fixture-host">
+		<testcase name="passes &amp; keeps unicode 中文" time="0.000695" classname="node fixture" file="fixtures/generate/node-case.mjs"/>
+		<testcase name="planned test" time="0.000372" classname="node fixture" file="fixtures/generate/node-case.mjs">
+			<skipped type="skipped" message="true"/>
+		</testcase>
+	</testsuite>
+	<!-- tests 2 -->
+	<!-- suites 1 -->
+	<!-- pass 1 -->
+	<!-- fail 0 -->
+	<!-- cancelled 0 -->
+	<!-- skipped 1 -->
+	<!-- todo 0 -->
+	<!-- duration_ms 147.4805 -->
+</testsuites>
