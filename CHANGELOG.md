@@ -6,6 +6,8 @@
 - Exact test identities, explicit duplicate policies and Surefire retry semantics.
 - Baseline/current comparison, historical annotations, duration heuristics and configurable CI gates.
 - Node CLI with JSON, Markdown, text and JSONL interfaces; portable compiled distribution.
+- Strict JSON request fields, Surefire schema metadata, Unicode-safe rendering and comparison JSON Schema.
+- Three complete CI scenarios and deterministic source/module/CLI archives verified on Ubuntu and Windows.
 - Four-target library tests, independent consumer, saved mature-library oracle and CLI end-to-end checks.
 
 The GitHub repository hosts development history. Mooncakes publication and hackathon submission have not been performed.

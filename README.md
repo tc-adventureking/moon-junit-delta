@@ -70,7 +70,7 @@ bash scripts/verify.sh     # 四目标、CLI、成熟库回归向量、打包和
 node scripts/scale.mjs    # 两份各 20,000 用例的可复现规模检查
 ```
 
-公共检查需要 MoonBit、Node.js 24、Bash、unzip 和 C 编译器。已验证版本与实际结果见 [TESTING](docs/TESTING.md)。GitHub Actions 配置已提供，本地运行不能代替远端 CI 成功记录。
+公共检查需要 MoonBit、Node.js 24、Bash、unzip 和 C 编译器；动态参考与归档脚本另需 Python 3.10+。已验证版本与实际结果见 [TESTING](docs/TESTING.md)。[远端 CI](https://github.com/tc-adventureking/moon-junit-delta/actions/runs/42518258496) 已通过源码验证、两次相同归档构建，以及 Ubuntu/Windows 对同一便携包的各 24 项 CLI 和 5 项场景检查。
 
 | 文档 | 内容 |
 |---|---|
@@ -79,6 +79,7 @@ node scripts/scale.mjs    # 两份各 20,000 用例的可复现规模检查
 | [COMPATIBILITY](docs/COMPATIBILITY.md) | junitparser 直接对标及明确差异 |
 | [PROVENANCE](docs/PROVENANCE.md) | 依赖、夹具、许可和 AI 协作说明 |
 | [HACKATHON](docs/HACKATHON.md) | 选题依据、参赛介绍与演示流程 |
+| [SUBMISSION](docs/SUBMISSION.md) | 按八项要求整理的简洁项目申报书 |
 | [RELEASING](docs/RELEASING.md) | 源码包、便携 CLI 与发布步骤 |
 
 项目代码为 MIT；复用组件及夹具保留其原许可，见 [第三方声明](third_party/NOTICE.md)。

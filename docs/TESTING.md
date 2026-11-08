@@ -48,4 +48,6 @@ Windows 将 venv 解释器路径换为 `_build/reference/venv/Scripts/python.exe
 
 `scripts/verify-package.sh` 只使用本次 `moon package` 返回的源码 ZIP，检查归档路径及必要文件，再在仓库以外解压并建立新的消费者 workspace。消费者通过公开 API 测试比较、门禁、原始记录和重试归并；不会因同仓库的私有可见性而误通过。
 
-GitHub Actions 配置安装官方 stable 工具链并运行公共验证脚本。远端结果以实际 workflow run 为准；工具链升级后应重新验证。Claude 的最终审查与本地运行是不同证据，不将“审查通过”当作执行测试的证明。
+GitHub Actions 配置安装官方 stable 工具链并运行公共验证脚本。[运行 42518258496](https://github.com/tc-adventureking/moon-junit-delta/actions/runs/42518258496) 在提交 `290106c` 上实际通过：源码四目标与独立消费者、固定成熟库动态差分、两次归档字节一致性，以及 Ubuntu/Windows 对同一解压便携包各 24 项 CLI 和 5 项场景检查。便携验证作业没有安装 MoonBit。
+
+工具链升级后应重新验证。Claude 的静态审查与实际运行是不同证据，不将“审查通过”当作执行测试的证明。
