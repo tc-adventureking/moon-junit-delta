@@ -9,6 +9,7 @@ moon info
 moon build cmd/junit_delta --target js --release --deny-warn
 node scripts/e2e.mjs
 node scripts/contract.mjs
+node scripts/schema.mjs
 node scripts/package-cli.mjs
 bash scripts/verify-package.sh
 printf '%s\n' 'All source, CLI, oracle and package checks passed.'

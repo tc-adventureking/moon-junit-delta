@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/tc-adventureking/moon-junit-delta/main/schemas/report.schema.json",
+  "title": "junit-delta comparison report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "baseline_count", "candidate_count", "history_count", "counts", "gate", "entries", "diagnostics"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "baseline_count": { "type": "integer", "minimum": 0, "maximum": 100000 },
+    "candidate_count": { "type": "integer", "minimum": 0, "maximum": 100000 },
+    "history_count": { "type": "integer", "minimum": 1, "maximum": 50 },
+    "counts": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/category" },
+      "additionalProperties": { "type": "integer", "minimum": 1, "maximum": 200000 }
+    },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["passed", "violations", "exit_code"],
+      "properties": {
+        "passed": { "type": "boolean" },
+        "violations": { "type": "array", "uniqueItems": true, "items": { "enum": ["new_failure", "added_failing", "still_failing", "removed", "newly_skipped", "flaky", "slowdown", "empty_report"] } },
+        "exit_code": { "enum": [0, 1] }
+      },
+      "if": { "properties": { "passed": { "const": true } } },
+      "then": { "properties": { "exit_code": { "const": 0 }, "violations": { "type": "array", "maxItems": 0 } } },
+      "else": { "properties": { "exit_code": { "const": 1 }, "violations": { "type": "array", "minItems": 1 } } }
+    },
+    "entries": { "type": "array", "maxItems": 200000, "items": { "$ref": "#/$defs/entry" } },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["source", "code", "message"],
+        "properties": { "source": { "type": "string" }, "code": { "type": "string", "minLength": 1 }, "message": { "type": "string" } }
+      }
+    }
+  },
+  "$defs": {
+    "category": { "enum": ["added", "added_failing", "fixed", "new_failure", "newly_skipped", "removed", "still_failing", "unchanged", "unskipped"] },
+    "time": { "type": ["integer", "null"], "minimum": 0, "maximum": 9000000000000 },
+    "id": {
+      "oneOf": [
+        { "type": "array", "minItems": 3, "maxItems": 3, "prefixItems": [{ "const": "class" }, { "type": "string" }, { "type": "string", "minLength": 1 }], "items": false },
+        { "type": "array", "minItems": 3, "maxItems": 3, "prefixItems": [{ "const": "suite" }, { "type": "array", "minItems": 1, "items": { "type": "string" } }, { "type": "string", "minLength": 1 }], "items": false }
+      ]
+    },
+    "case": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["outcome", "attempts", "flaky", "time_us", "message", "source"],
+          "properties": {
+            "outcome": { "enum": ["passed", "failed", "errored", "skipped"] },
+            "attempts": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+            "flaky": { "type": "boolean" },
+            "time_us": { "$ref": "#/$defs/time" },
+            "message": { "type": "string", "maxLength": 2048 },
+            "source": { "type": "string" }
+          }
+        }
+      ]
+    },
+    "entry": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "category", "before", "after", "baseline_time_us", "slowdown", "known_flaky"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "category": { "$ref": "#/$defs/category" },
+        "before": { "$ref": "#/$defs/case" },
+        "after": { "$ref": "#/$defs/case" },
+        "baseline_time_us": { "$ref": "#/$defs/time" },
+        "slowdown": { "type": "boolean" },
+        "known_flaky": { "type": "boolean" }
+      }
+    }
+  }
+}

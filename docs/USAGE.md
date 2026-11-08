@@ -76,6 +76,10 @@ node bin/junit-delta.mjs compare --baseline baseline.xml --candidate current.xml
 
 ## 库入口
 
+比较结果提供 [JSON Schema 2020-12](../schemas/report.schema.json)，对应 `schema_version:1`。它约束字段、ID 的两种形状、整数微秒边界和门禁状态一致性，供 CI 存储与其他语言消费时校验。它只描述比较 report，不描述请求或 `op:parse` 的原始报告；JSONL 比较响应中应校验 `report` 字段。
+
+完整开发源码使用 Ajv 8.20.0 验证所有黄金报告，并检查非法类型、负时长、错误 ID、门禁矛盾等反例：`npm ci --ignore-scripts` 后运行 `npm run check:schema`。Ajv 是开发依赖，CLI 与 MoonBit 库不需要它。请求的唯一校验入口仍为 MoonBit 的 `evaluate_request`。
+
 | 入口 | 用途 |
 |---|---|
 | `parse_document(xml, source?)` | 原始 JUnit 读取，保留重复与标记 |

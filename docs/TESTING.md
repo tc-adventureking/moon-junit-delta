@@ -3,6 +3,7 @@
 ## 可复现检查
 
 ```sh
+npm ci --ignore-scripts
 bash scripts/verify.sh
 node scripts/scale.mjs
 ```
@@ -20,6 +21,7 @@ node scripts/scale.mjs
 | 公共成熟库回归向量 | 207 份保存的独立期望，Node CLI 实际解析 | 181 匹配 + 26 拒绝，零差异 |
 | 源码包与消费者 | 官方 ZIP 在仓库外解压；消费者每目标 2 个公共 API 测试 | 四目标合计 8 次执行通过 |
 | 便携 CLI | 不含 MoonBit manifest 的目录，由真实启动器读取黄金示例 | 退出码与完整 JSON 一致 |
+| 输出协议 Schema | Ajv 8.20.0 的严格 Draft 2020-12 校验 | 黄金报告通过，8 个非法报告反例全部拒绝 |
 
 成熟库参考 wheel 的 SHA-256 与投影字段见 [COMPATIBILITY](COMPATIBILITY.md)。完整生成语料固定种子为 `20261109`，公开工具可在隔离环境重新执行真实 Python 库：
 

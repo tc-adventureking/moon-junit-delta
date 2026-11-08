@@ -14,7 +14,7 @@ if(existsSync(output)) rmSync(output,{recursive:true});
 mkdirSync(join(output,'dist'),{recursive:true});
 copyFileSync(entry,join(output,'dist/junit-delta.js'));
 for(const file of ['README.md','LICENSE']) copyFileSync(join(root,file),join(output,file));
-for(const dir of ['bin','docs','third_party','fixtures']) cpSync(join(root,dir),join(output,dir),{recursive:true});
+for(const dir of ['bin','docs','third_party','fixtures','schemas']) cpSync(join(root,dir),join(output,dir),{recursive:true});
 mkdirSync(join(output,'examples'),{recursive:true});
 for(const file of readdirSync(join(root,'examples'))) {
   if(/\.(xml|json|md)$/.test(file)) copyFileSync(join(root,'examples',file),join(output,'examples',file));

@@ -63,6 +63,7 @@ assert_eq(result.exit_code(), 1)
 ## 验证与文档
 
 ```sh
+npm ci --ignore-scripts    # 开发期输出 Schema 校验器
 bash scripts/verify.sh     # 四目标、CLI、成熟库回归向量、打包和独立消费者
 node scripts/scale.mjs    # 两份各 20,000 用例的可复现规模检查
 ```
