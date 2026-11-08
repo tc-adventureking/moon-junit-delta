@@ -1,16 +1,20 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, mkdtempSync, rmSync, existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const source = dirname(dirname(fileURLToPath(import.meta.url)));
+const portable = process.argv[2] === '--portable';
+const root = portable ? resolve(process.argv[3]) : source;
+if (portable) assert.equal(existsSync(join(root, 'moon.mod')), false);
 const entry = process.argv[2] ?? join(root, '_build/js/release/build/cmd/junit_delta/junit_delta.js');
 const runtime = join(root, 'bin/run.mjs');
+const command = portable ? [join(root, 'bin/junit-delta.mjs')] : [runtime, entry];
 const args = ['compare', '--baseline', 'examples/baseline.xml', '--candidate', 'examples/candidate.xml'];
 let checks = 0;
 function run(extra, input) {
-  const r = spawnSync(process.execPath, [runtime, entry, ...extra], { cwd: root, input, encoding: 'utf8', timeout: 30000 });
+  const r = spawnSync(process.execPath, [...command, ...extra], { cwd: root, input, encoding: 'utf8', timeout: 30000 });
   assert.ifError(r.error); assert.equal(r.signal, null); checks++;
   return r;
 }
