@@ -26,7 +26,9 @@
 
 固定随机种子 `20261109`，1,073 份输入：1,051 份支持范围内结果一致，22 份由本项目明确拒绝，零未解释差异。输入包含 35 组状态组合、重复及嵌套套件、Unicode/空白/XML 实体、五份夹具、1,000 份生成报告和拒绝边界。
 
-公共 [回归向量](../fixtures/junitparser-contract.json) 保存其中 201 份输入及成熟库产生的期望投影，包含全部手工边界与 128 份生成报告。`node scripts/contract.mjs` 不依赖 Python，逐条比较输出或拒绝代码；任何字段或顺序差异都会失败。全量动态 Python 差分已在本地执行，公共向量回放不等于重新运行 Python 库。
+公共 [回归向量](../fixtures/junitparser-contract.json) 保存其中 201 份输入及成熟库产生的期望投影，包含全部手工边界与 128 份生成报告。`node scripts/contract.mjs` 不依赖 Python，逐条比较输出或拒绝代码；任何字段或顺序差异都会失败。
+
+完整开发源码提供 `scripts/reference/junitparser_diff.py`，固定 wheel 哈希、生成全部输入、调用上游公开 API 并与实际 MoonBit 输出比较。它直接从 wheel 导入纯 Python 包，无需安装上游代码；Python 只用于开发验证。可在新 venv 中再生 201 份向量并逐字节比较，步骤见 [TESTING](TESTING.md)。CI 同时执行动态差分与保存向量回放，二者是不同检查。
 
 ## 有意收窄的输入
 

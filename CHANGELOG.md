@@ -8,4 +8,4 @@
 - Node CLI with JSON, Markdown, text and JSONL interfaces; portable compiled distribution.
 - Four-target library tests, independent consumer, saved mature-library oracle and CLI end-to-end checks.
 
-Public GitHub / Mooncakes publication and hackathon submission have not been performed.
+The GitHub repository hosts development history. Mooncakes publication and hackathon submission have not been performed.

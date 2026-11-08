@@ -17,3 +17,9 @@ jobs:
           bash "$RUNNER_TEMP/install-moon.sh"
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
       - run: bash scripts/verify.sh
+      - name: Reproduce pinned junitparser oracle in an isolated Python environment
+        run: |
+          python3 -m pip download --no-deps --only-binary=:all: --require-hashes -r scripts/reference/requirements.txt -d _build/reference
+          python3 -m venv --without-pip _build/reference/venv
+          _build/reference/venv/bin/python -I scripts/reference/junitparser_diff.py --wheel _build/reference/junitparser-5.0.3-py3-none-any.whl --oracle-output _build/reference/oracle.json
+          cmp fixtures/junitparser-contract.json _build/reference/oracle.json

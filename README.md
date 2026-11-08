@@ -4,7 +4,7 @@
 
 例如，同样是“2 个失败”，旧问题可能已经修复，同时引入了两个新问题。junit-delta 按测试身份逐项比较，区分新增失败、仍然失败、修复、移除和跳过变化；历史失败不会自动成为放行理由。
 
-当前版本：`0.1.0`，本地发布候选。尚未发布到 Mooncakes 或 GitHub，不能通过 `moon add` 下载本项目。最新交付状态见 [project.md](project.md)。
+当前版本：`0.1.0`，发布候选。[GitHub 仓库](https://github.com/tc-adventureking/moon-junit-delta) 已建立；尚未发布到 Mooncakes，不能通过 `moon add` 下载本项目。最新交付状态见 [project.md](project.md)。
 
 ## 成熟生态对标
 

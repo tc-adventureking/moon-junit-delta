@@ -12,7 +12,7 @@
 
 第三方许可全文在 `third_party/`。上游 pytest XML 文件按原文本保存；其在 JSON 回归向量中的重复内容同样保留上游署名。Node 夹具来自本项目测试代码生成，主机名及绝对路径做了便携替换。其他夹具和完整来源见 [fixtures/SOURCES.md](../fixtures/SOURCES.md)。
 
-本地差分工具使用固定 wheel 和独立的 Python 比较参考，未进入运行时或发布源码包。公共回归向量保存实际成熟库输出，不是由待测 MoonBit 实现自举期望值；公共 CI 回放这些向量。动态差分与静态向量回放的范围明确区分，见 [TESTING](TESTING.md)。
+固定 wheel 的成熟库动态差分工具在完整开发源码 `scripts/reference/` 公开，可在隔离环境重跑；不进入运行时或 MoonBit 模块包。独立的比较层 Python 参考和模型日志保留在本地。公共回归向量保存实际成熟库输出，不是由待测 MoonBit 实现自举期望值；公共 CI 执行动态差分并回放向量，见 [TESTING](TESTING.md)。
 
 选题调研同时查看 TapTrail、MoonProbe、mcpconftest 与 SARIF 相关项目。它们分别侧重 TAP 输入、测试执行/结果输出或其他报告格式；这次检索没有找到同范围的 MoonBit JUnit 输入比较器，不等于证明生态中绝无类似项目。
 

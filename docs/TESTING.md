@@ -21,7 +21,16 @@ node scripts/scale.mjs
 | 源码包与消费者 | 官方 ZIP 在仓库外解压；消费者每目标 2 个公共 API 测试 | 四目标合计 8 次执行通过 |
 | 便携 CLI | 不含 MoonBit manifest 的目录，由真实启动器读取黄金示例 | 退出码与完整 JSON 一致 |
 
-成熟库参考 wheel 的 SHA-256 与投影字段见 [COMPATIBILITY](COMPATIBILITY.md)。完整生成语料固定种子为 `20261109`，私人开发环境中执行的 Python 差分工具不在运行时发布包内。公共 CI 使用 201 份保存的成熟库期望向量，覆盖全部手工边界及 128 份随机报告；它能稳定复验回归，但不声称每次重新执行 Python 库。
+成熟库参考 wheel 的 SHA-256 与投影字段见 [COMPATIBILITY](COMPATIBILITY.md)。完整生成语料固定种子为 `20261109`，公开工具可在隔离环境重新执行真实 Python 库：
+
+```sh
+python3 -m pip download --no-deps --only-binary=:all: --require-hashes -r scripts/reference/requirements.txt -d _build/reference
+python3 -m venv --without-pip _build/reference/venv
+_build/reference/venv/bin/python -I scripts/reference/junitparser_diff.py --wheel _build/reference/junitparser-5.0.3-py3-none-any.whl --oracle-output _build/reference/oracle.json
+cmp fixtures/junitparser-contract.json _build/reference/oracle.json
+```
+
+Windows 将 venv 解释器路径换为 `_build/reference/venv/Scripts/python.exe`，用文件摘要或二进制比较代替 `cmp`。公共 CI 同时执行全部动态差分、201 份保存的期望回放及再生文件逐字节一致性检查。程序默认不改期望文件，只有显式 `--write-oracle` 才刷新受版本控制的向量。
 
 26 个测试块包含 35 组状态转换以及更多循环内断言，不把断言数量冒称为独立测试数。真实 Node 夹具与上游 pytest 夹具、有意构造的 Surefire/GitLab/pytest 示例分别说明来源；没有声称执行 Maven 或 GitLab 服务。
 
@@ -35,4 +44,4 @@ node scripts/scale.mjs
 
 `scripts/verify-package.sh` 只使用本次 `moon package` 返回的源码 ZIP，检查归档路径及必要文件，再在仓库以外解压并建立新的消费者 workspace。消费者通过公开 API 测试比较、门禁、原始记录和重试归并；不会因同仓库的私有可见性而误通过。
 
-GitHub Actions 配置安装官方 stable 工具链并运行公共验证脚本。当前仓库未上传，因此没有远端 CI 成功记录；工具链升级后应重新验证。Claude 的最终审查与本地运行是不同证据，不将“审查通过”当作执行测试的证明。
+GitHub Actions 配置安装官方 stable 工具链并运行公共验证脚本。远端结果以实际 workflow run 为准；工具链升级后应重新验证。Claude 的最终审查与本地运行是不同证据，不将“审查通过”当作执行测试的证明。
