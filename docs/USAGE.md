@@ -1,5 +1,7 @@
 # 使用指南
 
+Mooncakes 提供库源码与 API；以下 CLI、示例和开发脚本命令在 [GitHub 源码仓库](https://github.com/tc-adventureking/moon-junit-delta) 内运行。
+
 ## 两份报告
 
 ```sh

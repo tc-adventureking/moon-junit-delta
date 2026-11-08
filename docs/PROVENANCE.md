@@ -12,8 +12,8 @@ XML 解析复用生态内的实现，JUnit 读取层通过固定版本的成熟�
 | [Ajv](https://github.com/ajv-validator/ajv) | 输出 JSON Schema 的独立开发校验器 | 8.20.0，MIT；不随 CLI 分发 |
 | Surefire、pytest、GitLab、Node 官方文档 | 已声明输入范围与作者构造的示例 | 链接及实际执行情况见夹具来源 |
 
-第三方许可全文在 `third_party/`。上游 pytest XML 文件按原文本保存；其在 JSON 回归向量中的重复内容同样保留上游署名。Node 夹具来自本项目测试代码生成，主机名及绝对路径做了便携替换。其他夹具和完整来源见 [fixtures/SOURCES.md](../fixtures/SOURCES.md)。
+第三方许可全文在 `third_party/`。上游 pytest XML 文件按原文本保存；其在 JSON 回归向量中的重复内容同样保留上游署名。Node 夹具来自本项目测试代码生成，主机名及绝对路径做了便携替换。其他夹具和完整来源见 [fixtures/SOURCES.md](https://github.com/tc-adventureking/moon-junit-delta/blob/main/fixtures/SOURCES.md)。
 
-固定 wheel 的成熟库动态差分工具在完整开发源码 `scripts/reference/` 公开，可在隔离环境重跑；不进入运行时或 MoonBit 模块包。公共回归向量保存实际成熟库输出，不是由待测 MoonBit 实现自举期望值；公共 CI 执行动态差分并回放向量，见 [TESTING](TESTING.md)。
+固定 wheel 的成熟库动态差分工具在完整开发源码 `scripts/reference/` 公开，可在隔离环境重跑；不进入运行时或 MoonBit 模块包。公共回归向量保存实际成熟库输出，不是由待测 MoonBit 实现自举期望值；公共 CI 执行动态差分并回放向量，见 [TESTING](https://github.com/tc-adventureking/moon-junit-delta/blob/main/docs/TESTING.md)。
 
 本项目开发使用 AI 辅助设计与实现。公开测试和提交记录用于核对实现行为。

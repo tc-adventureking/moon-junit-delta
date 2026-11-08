@@ -11,7 +11,7 @@ node _build/extracted-release/junit-delta-0.1.0-cli/bin/junit-delta.mjs --versio
 输出包含三个 ZIP：
 
 - `junit-delta-0.1.0-source.zip`：从 Git HEAD 导出的完整开发源码，含 CI、开发工具及独立消费者。
-- `tc-adventureking-junit_delta-0.1.0.zip`：`moon package` 产生的模块文件，重新固定 ZIP 元数据；面向 MoonBit 库集成，排除 `.github`、Python 开发工具和消费者子模块。
+- `tc-adventureking-junit_delta-0.1.0.zip`：`moon package` 产生的模块文件，重新固定 ZIP 元数据；面向 MoonBit 库集成；仅包含库源码、测试、公开 API、必要文档、Schema 和许可证。CLI、CI、开发工具、原始夹具和示例仅保留在完整源码仓库。
 - `junit-delta-0.1.0-cli.zip`：编译好的 MoonBit JavaScript、Node 启动器、三个场景、文档及许可证。运行只需 Node.js 24，不需要 Python、MoonBit 或 Ajv。
 
 `RELEASE.json` 记录源提交、工具版本、每个归档的字节数和 SHA-256；`SHA256SUMS` 方便外部核对。便携目录内的 `MANIFEST.json` 列出每个文件的摘要。验证脚本核对归档、CRC、路径、逐文件摘要，并只解压到一个尚不存在的新目录。摘要核对用于检测传输或构建差异，本身不是来源签名。
@@ -22,4 +22,4 @@ node _build/extracted-release/junit-delta-0.1.0-cli/bin/junit-delta.mjs --versio
 
 官方模块包首次使用需要安装 `Milky2018/xml@0.6.1`。`scripts/verify-package.sh` 在仓库外解压新包，建立新消费者 workspace，四目标测试公开 API。公共脚本和 Ubuntu CI 使用系统 unzip。
 
-公开 GitHub 仓库已建立。当前归档为 v0.1.0 交付候选；生成归档不等于创建 GitHub Release、发布 Mooncakes 或提交赛事报名。正式发布时应在通过 CI 的源提交上建立版本标签，并分发本次摘要对应的归档。
+Mooncakes 使用 `.moonignore` 中的文件白名单。发布前检查 `moon package` 的实际 ZIP 内容并运行 `moon publish --dry-run`，通过后执行 `moon publish`。发布检查会在新目录解包并安装依赖，因此不使用禁止安装依赖的 `--frozen`。发布后在仓库外的新项目运行 `moon add tc-adventureking/junit_delta@0.1.0`，验证注册表下载和四目标测试。安装 Mooncakes 库包无需下载完整 Git 仓库；CLI 的构建与使用仍需完整源码或便携包。
