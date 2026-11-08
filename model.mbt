@@ -54,6 +54,7 @@ pub struct Report {
 pub(all) suberror InputError {
   InvalidInput(String)
   Rejected(String, String)
+  UnknownField(String)
 } derive(Eq)
 
 ///|
@@ -210,6 +211,7 @@ pub impl Show for InputError with fn output(self, logger) {
   match self {
     InvalidInput(message) => logger.write_string(message)
     Rejected(code, message) => logger.write_string("[\{code}] \{message}")
+    UnknownField(path) => logger.write_string("unknown field at \{path}")
   }
 }
 

@@ -28,6 +28,7 @@ pub fn usage() -> String
 pub(all) suberror InputError {
   InvalidInput(String)
   Rejected(String, String)
+  UnknownField(String)
 } derive(Eq)
 pub fn InputError::equal(Self, Self) -> Bool
 pub fn InputError::not_equal(Self, Self) -> Bool

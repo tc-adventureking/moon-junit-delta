@@ -5,6 +5,7 @@ version = "0.1.0"
 license = "MIT"
 
 readme = "README.md"
+
 repository = "https://github.com/tc-adventureking/moon-junit-delta"
 
 description = "Deterministic JUnit XML comparison and CI gates in MoonBit"

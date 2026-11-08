@@ -60,6 +60,8 @@ JSON 协议的绝对阈值使用微秒；CLI 使用毫秒。比较请求 `op` �
 
 成功响应含 `ok:true,exit_code,report`；失败响应含 `ok:false,exit_code:2,error_code,error`。每行独立处理，某一行失败不会吞掉其他行的结果；进程退出码为所有行最大值。空白行忽略。
 
+请求根对象和每个 document 都拒绝未知字段。拼错 `fail_on` 不会静默使用默认策略：响应为 `error_code:"unknown_field"`、退出码 2，并提供括号式 JSON 路径，例如 `$["baselines"][0]["sorce"]`。不同操作只接受各自的字段，`op:"parse"` 不接受比较门禁选项。
+
 ## CI 集成
 
 先从可信构建产物取得基准与当前 XML，再运行：

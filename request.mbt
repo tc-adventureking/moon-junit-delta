@@ -1,4 +1,21 @@
 ///|
+fn validate_keys(
+  value : Json,
+  allowed : Array[String],
+  path : String,
+) -> Unit raise InputError {
+  match value {
+    Object(fields) =>
+      for key, _ in fields {
+        if !allowed.contains(key) {
+          raise UnknownField(path + "[" + Json(key).stringify() + "]")
+        }
+      }
+    _ => raise InvalidInput("\{path} must be an object")
+  }
+}
+
+///|
 fn field(value : Json, key : String) -> Json? raise InputError {
   match value {
     Object(m) => m.get(key)
@@ -52,7 +69,9 @@ fn parse_duplicates(value : String) -> DuplicatePolicy raise InputError {
 fn input_document(
   value : Json,
   duplicates : DuplicatePolicy,
+  path : String,
 ) -> Report raise InputError {
+  validate_keys(value, ["xml", "source"], path)
   let source = string_field(value, "source", "<input>")
   let xml = string_field(value, "xml", "")
   parse_report(xml, source~, duplicates~)
@@ -62,18 +81,20 @@ fn input_document(
 fn input_run(
   value : Json,
   duplicates : DuplicatePolicy,
+  path : String,
 ) -> Report raise InputError {
   match value {
     Array(docs) => {
       if docs.is_empty() || docs.length() > 50 {
         raise InvalidInput("a run requires 1..50 documents")
       }
-      merge_reports(
-        docs.map(doc => input_document(doc, duplicates)),
-        duplicates~,
-      )
+      let reports : Array[Report] = []
+      for i = 0; i < docs.length(); i = i + 1 {
+        reports.push(input_document(docs[i], duplicates, "\{path}[\{i}]"))
+      }
+      merge_reports(reports, duplicates~)
     }
-    _ => input_document(value, duplicates)
+    _ => input_document(value, duplicates, path)
   }
 }
 
@@ -89,10 +110,12 @@ pub fn evaluate_request(text : String) -> Json {
     }
     let operation = string_field(request, "op", "compare")
     if operation == "parse" {
+      validate_keys(request, ["op", "document"], "$")
       let doc = match field(request, "document") {
         Some(doc) => doc
         None => raise InvalidInput("missing document")
       }
+      validate_keys(doc, ["xml", "source"], "$[\"document\"]")
       let report = parse_document(
         string_field(doc, "xml", ""),
         source=string_field(doc, "source", "<input>"),
@@ -102,16 +125,29 @@ pub fn evaluate_request(text : String) -> Json {
     if operation != "compare" {
       raise InvalidInput("unknown operation: \{operation}")
     }
+    validate_keys(
+      request,
+      [
+        "op", "baselines", "candidate", "duplicates", "fail_on", "slowdown_pct",
+        "slowdown_floor_us",
+      ],
+      "$",
+    )
     let duplicates = parse_duplicates(
       string_field(request, "duplicates", "error"),
     )
     let history = match field(request, "baselines") {
-      Some(Array(runs)) if !runs.is_empty() && runs.length() <= 50 =>
-        runs.map(run => input_run(run, duplicates))
+      Some(Array(runs)) if !runs.is_empty() && runs.length() <= 50 => {
+        let reports : Array[Report] = []
+        for i = 0; i < runs.length(); i = i + 1 {
+          reports.push(input_run(runs[i], duplicates, "$[\"baselines\"][\{i}]"))
+        }
+        reports
+      }
       _ => raise InvalidInput("baselines must contain 1..50 chronological runs")
     }
     let candidate = match field(request, "candidate") {
-      Some(value) => input_run(value, duplicates)
+      Some(value) => input_run(value, duplicates, "$[\"candidate\"]")
       None => raise InvalidInput("missing candidate")
     }
     let fail_on = match field(request, "fail_on") {
@@ -139,6 +175,14 @@ pub fn evaluate_request(text : String) -> Json {
       "report": result.to_json(),
     }
   } catch {
+    UnknownField(path) =>
+      {
+        "ok": false,
+        "exit_code": 2,
+        "error_code": "unknown_field",
+        "error_path": Json(path),
+        "error": Json("unknown field at \{path}"),
+      }
     Rejected(code, message) =>
       {
         "ok": false,
