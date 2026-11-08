@@ -117,7 +117,10 @@ fn safe_cell(text : String) -> String {
       '~' => builder.write_string("&#126;")
       '\\' => builder.write_string("&#92;")
       '\n' | '\r' | '\t' => builder.write_string(" ")
-      _ => if ch.to_int() >= 32 && ch.to_int() != 127 { builder.write_char(ch) }
+      _ =>
+        if ch.to_int() >= 32 && (ch.to_int() < 127 || ch.to_int() > 159) {
+          builder.write_char(ch)
+        }
     }
   }
   builder.to_string()

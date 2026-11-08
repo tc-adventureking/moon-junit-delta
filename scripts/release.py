@@ -74,9 +74,13 @@ def main():
             members.append((f'junit-delta-{VERSION}/' + item.name, source.extractfile(item).read()))
         archive(full, members)
     module_out = output / module.name
+    tracked = set(subprocess.check_output(['git', 'ls-files', '-z'], cwd=ROOT).decode('utf-8').split('\0'))
     with zipfile.ZipFile(module) as package:
         if package.testzip() is not None:
             raise ValueError('Invalid module ZIP')
+        untracked = {x.filename for x in package.infolist() if not x.is_dir()} - tracked
+        if untracked:
+            raise ValueError(f'Module package contains files outside Git: {sorted(untracked)}')
         archive(module_out, [(x.filename, package.read(x)) for x in package.infolist() if not x.is_dir()])
     directory = ROOT / f'_build/release/junit-delta-{VERSION}-cli'
     manifest = json.loads((directory / 'MANIFEST.json').read_text(encoding='utf-8'))

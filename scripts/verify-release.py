@@ -5,6 +5,9 @@ import json
 from pathlib import Path
 import zipfile
 
+if not __debug__:
+    raise SystemExit('Run without -O or PYTHONOPTIMIZE; archive verification requires assertions')
+
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('archives', type=Path)
 parser.add_argument('--extract-cli', type=Path, required=True)

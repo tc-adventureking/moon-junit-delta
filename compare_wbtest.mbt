@@ -178,6 +178,7 @@ test "rendering preserves Unicode prefixes and escapes terminal and Markdown syn
   assert_false(md.contains("😀"))
   assert_true(md.contains("Outer&#36;Mid&#36;Inner"))
   assert_true(md.contains("&#126;&#126;x&#126;&#126;"))
+  assert_false(md.contains("\u{9b}"))
   let text = d.to_text()
   assert_true(text.contains("\\nJUnit Delta: PASS\\r\\t\\u007f\\u009b"))
   assert_false(text.contains("\nJUnit Delta: PASS"))
