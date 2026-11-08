@@ -203,3 +203,23 @@ test "raw flags are independent while final outcome follows precedence" {
   )
   assert_true(response.stringify().contains("missing_name"))
 }
+
+///|
+test "Surefire root schema metadata does not enable namespace interpretation" {
+  let declaration = "xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'"
+  let valid = "<testsuite \{declaration} xsi:noNamespaceSchemaLocation='https://example.invalid/never-fetched.xsd'><testcase name='x'><flakyFailure/></testcase></testsuite>"
+  let report = parse_document(valid)
+  assert_true(report.cases[0].is_flaky())
+  assert_eq(report.cases[0].outcome.label(), "passed")
+  for
+    xml in [
+      "<testsuite xmlns='urn:junit'/>",
+      "<testsuite xmlns:xsi='urn:wrong' xsi:noNamespaceSchemaLocation='a'/>",
+      "<testsuite xsi:noNamespaceSchemaLocation='a'/>",
+      "<testsuite \{declaration} xsi:type='anything'/>",
+      "<testsuite \{declaration}><xsi:testcase name='x'/></testsuite>",
+      "<testsuites><testsuite \{declaration}/></testsuites>",
+    ] {
+    assert_true(rejects(xml), msg=xml)
+  }
+}

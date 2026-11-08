@@ -10,7 +10,7 @@
 
 读取层直接对标 [junitparser 5.0.3](https://github.com/weiwei/junitparser)，复用 [Milky2018/xml 0.6.1](https://github.com/moonbit-community/xml-mbt) 解析 XML。固定版本的真实 Python 库参与差分验证，比较精确名称、类名、记录顺序、重复项和六项原始结果标记。
 
-1,073 份差分输入中，1,051 份支持范围内的读取结果一致，22 份按明确规则拒绝，零未解释差异。仓库保留 201 份独立生成的回归向量，`node scripts/contract.mjs` 可复验。范围及差异见 [COMPATIBILITY](docs/COMPATIBILITY.md)；这不是 junitparser 的全量移植。
+1,079 份差分输入中，1,053 份支持范围内的读取结果一致，26 份按明确规则拒绝，零未解释差异。仓库保留 207 份独立生成的回归向量，`node scripts/contract.mjs` 可复验。范围及差异见 [COMPATIBILITY](docs/COMPATIBILITY.md)；这不是 junitparser 的全量移植。
 
 ## 快速运行
 

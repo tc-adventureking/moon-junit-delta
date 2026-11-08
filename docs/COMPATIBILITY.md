@@ -24,11 +24,11 @@
 
 ## 验证范围
 
-固定随机种子 `20261109`，1,073 份输入：1,051 份支持范围内结果一致，22 份由本项目明确拒绝，零未解释差异。输入包含 35 组状态组合、重复及嵌套套件、Unicode/空白/XML 实体、五份夹具、1,000 份生成报告和拒绝边界。
+固定随机种子 `20261109`，1,079 份输入：1,053 份支持范围内结果一致，26 份由本项目明确拒绝，零未解释差异。输入包含 35 组状态组合、重复及嵌套套件、Unicode/空白/XML 实体、七份夹具、1,000 份生成报告和拒绝边界。
 
-公共 [回归向量](../fixtures/junitparser-contract.json) 保存其中 201 份输入及成熟库产生的期望投影，包含全部手工边界与 128 份生成报告。`node scripts/contract.mjs` 不依赖 Python，逐条比较输出或拒绝代码；任何字段或顺序差异都会失败。
+公共 [回归向量](../fixtures/junitparser-contract.json) 保存其中 207 份输入及成熟库产生的期望投影，包含全部手工边界与 128 份生成报告。`node scripts/contract.mjs` 不依赖 Python，逐条比较输出或拒绝代码；任何字段或顺序差异都会失败。
 
-完整开发源码提供 `scripts/reference/junitparser_diff.py`，固定 wheel 哈希、生成全部输入、调用上游公开 API 并与实际 MoonBit 输出比较。它直接从 wheel 导入纯 Python 包，无需安装上游代码；Python 只用于开发验证。可在新 venv 中再生 201 份向量并逐字节比较，步骤见 [TESTING](TESTING.md)。CI 同时执行动态差分与保存向量回放，二者是不同检查。
+完整开发源码提供 `scripts/reference/junitparser_diff.py`，固定 wheel 哈希、生成全部输入、调用上游公开 API 并与实际 MoonBit 输出比较。它直接从 wheel 导入纯 Python 包，无需安装上游代码；Python 只用于开发验证。可在新 venv 中再生 207 份向量并逐字节比较，步骤见 [TESTING](TESTING.md)。CI 同时执行动态差分与保存向量回放，二者是不同检查。
 
 ## 有意收窄的输入
 
@@ -37,7 +37,7 @@
 | name 缺失或为空 | `missing_name` | 比较器需要稳定测试身份 |
 | 负数、指数、非有限数、带空白时长或超界 | `invalid_time` | 明确十进制整数微秒契约，避免浮点舍入与无意义耗时 |
 | skipped 与 retry 同时出现；无外层失败的 rerun | `retry_conflict` | 不猜测矛盾的最终状态 |
-| 带命名空间 | `unsupported_namespace` | 当前仅支持无命名空间的 JUnit XML |
+| 默认命名空间、带前缀的元素或非白名单命名空间属性 | `unsupported_namespace` | 仅放行根节点上绑定 W3C 实例 URI 的 xmlns:xsi 和 xsi:noNamespaceSchemaLocation 元数据；JUnit 元素仍必须无命名空间 |
 | DTD | `doctype` | 不解析或读取外部实体 |
 | 非 UTF-8 编码声明 | `unsupported_encoding` | CLI 与库采用统一编码范围 |
 | 包裹在未知元素中的 testcase / result、嵌套 testsuites | `invalid_structure` | 不把隐藏的结果误作正常用例 |
@@ -52,4 +52,4 @@
 
 [junit-xml-diff](https://github.com/insightsengineering/junit-xml-diff) 主要侧重耗时/计数，未采用其身份与重复聚合逻辑；[publish-unit-test-result-action](https://github.com/EnricoMi/publish-unit-test-result-action) 提供实际夹具与结果报告场景参考，但 GitHub 网络集成不是本项目范围。
 
-不实现 XML 编辑或写回、任意 xUnit 扩展、跨平台自动重命名匹配、自动重跑、JUnit5 测试执行器或统计显著性分析。不同生产者应先用真实输出验证；目前真实记录包括 Node 输出和有固定来源的上游 pytest 夹具，Surefire 与 GitLab 夹具是按文档构造的示例。
+不实现 XML 编辑或写回、任意 xUnit 扩展、跨平台自动重命名匹配、自动重跑、JUnit5 测试执行器或统计显著性分析。不同生产者应先用真实输出验证；已有 Node 实际输出，以及固定来源的上游 pytest、Apache Surefire 夹具；另有注明来源的作者构造样例。未在本机执行 Maven 或 GitLab。

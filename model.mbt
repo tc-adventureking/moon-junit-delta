@@ -1,26 +1,30 @@
 ///|
 /// Final outcome is separate from evidence of inconsistent attempts.
+#derive(Eq)
 pub(all) enum Outcome {
   Passed
   Failed
   Errored
   Skipped
-} derive(Eq)
+}
 
 ///|
+#derive(Eq)
 pub(all) enum DuplicatePolicy {
   Reject
   Attempts
-} derive(Eq)
+}
 
 ///|
 /// Tagged identity prevents class names from colliding with fallback suite paths.
+#derive(Eq)
 pub(all) enum TestId {
   Class(String, String)
   SuitePath(Array[String], String)
-} derive(Eq)
+}
 
 ///|
+#derive(Eq)
 pub struct TestCase {
   id : TestId
   name : String
@@ -35,27 +39,30 @@ pub struct TestCase {
   time_us : Int64?
   message : String
   source : String
-} derive(Eq)
+}
 
 ///|
+#derive(Eq)
 pub struct Diagnostic {
   source : String
   code : String
   message : String
-} derive(Eq)
+}
 
 ///|
+#derive(Eq)
 pub struct Report {
   cases : Array[TestCase]
   diagnostics : Array[Diagnostic]
-} derive(Eq)
+}
 
 ///|
+#derive(Eq)
 pub(all) suberror InputError {
   InvalidInput(String)
   Rejected(String, String)
   UnknownField(String)
-} derive(Eq)
+}
 
 ///|
 pub fn TestId::to_json(self : TestId) -> Json {

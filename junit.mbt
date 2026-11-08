@@ -143,13 +143,24 @@ pub fn parse_document(
           }
           root_seen = true
         }
+        let root_xsi = depth == 1 &&
+          element.get("xmlns:xsi") ==
+          Some("http://www.w3.org/2001/XMLSchema-instance")
         if tag.contains(":") ||
           element.attributes.any(a => {
-            a.name == "xmlns" || a.name.has_prefix("xmlns:")
+            if root_xsi &&
+              (
+                a.name == "xmlns:xsi" ||
+                a.name == "xsi:noNamespaceSchemaLocation"
+              ) {
+              false
+            } else {
+              a.name == "xmlns" || a.name.contains(":")
+            }
           }) {
           raise Rejected(
             "unsupported_namespace",
-            "\{source}: XML namespaces are outside the supported JUnit profile",
+            "\{source}: only root Surefire xsi schema metadata is supported; namespaced JUnit elements are not",
           )
         }
         if tag == "testsuite" {

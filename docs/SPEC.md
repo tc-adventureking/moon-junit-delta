@@ -64,4 +64,4 @@ JSON `schema_version=1`，完整 entries 按 `(category, ID JSON)` 字典序排�
 
 每份 XML 最多 10,000,000 UTF-16 代码单元、深度 128、2,000,000 次读取事件、100,000 条 testcase。比较每个运行归并后不超过 100,000 个 ID；最多 50 个历史运行、每运行最多 50 个分片。CLI 单次输入文件/标准输入最多 20,000,000 字节，compare 合计 XML 最多 20,000,000 代码单元；JSONL 整批读取，有同样的 20,000,000 代码单元上限，不是无限流式协议。
 
-重复归并后单个 ID 的 attempts 不超过 1,000,000。XML、JSON 重复属性/键拒绝；DTD、命名空间和非 UTF-8 声明不受支持。CLI 不执行报告中的代码，不读取实体地址，也不访问网络。
+重复归并后单个 ID 的 attempts 不超过 1,000,000。XML、JSON 重复属性/键拒绝；DTD、命名空间化的 JUnit 元素和非 UTF-8 声明不受支持。根节点可携带 Surefire 的 `xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"` 和 `xsi:noNamespaceSchemaLocation`，二者只作元数据，schema URL 从不读取；其他命名空间属性拒绝。CLI 不执行报告中的代码，不读取实体地址，也不访问网络。
