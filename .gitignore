@@ -3,3 +3,17 @@ _build/
 .DS_Store
 node_modules/
 *.tmp
+
+# Local project state and private working material
+/project.md
+/work/
+/docs/HACKATHON.md
+/docs/SUBMISSION.md
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.log
+__pycache__/
+*.pyc

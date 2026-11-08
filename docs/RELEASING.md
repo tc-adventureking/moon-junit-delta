@@ -20,6 +20,6 @@ node _build/extracted-release/junit-delta-0.1.0-cli/bin/junit-delta.mjs --versio
 
 `scripts/package-cli.mjs` 只清理固定的 `_build/release/junit-delta-0.1.0-cli` 生成目录；公开归档脚本不删除源码或任意目标目录。便携包不含 `moon.mod`，因此实际启动器不会调用 MoonBit。Windows 用 `python` 替代 `python3`；构建和库测试仍需上述开发工具。
 
-官方模块包首次使用需要安装 `Milky2018/xml@0.6.1`。`scripts/verify-package.sh` 在仓库外解压新包，建立新消费者 workspace，四目标测试公开 API。本机 WSL 的 unzip 由私有 zipfile 适配器提供；公共脚本和 Ubuntu CI 使用系统 unzip。
+官方模块包首次使用需要安装 `Milky2018/xml@0.6.1`。`scripts/verify-package.sh` 在仓库外解压新包，建立新消费者 workspace，四目标测试公开 API。公共脚本和 Ubuntu CI 使用系统 unzip。
 
 公开 GitHub 仓库已建立。当前归档为 v0.1.0 交付候选；生成归档不等于创建 GitHub Release、发布 Mooncakes 或提交赛事报名。正式发布时应在通过 CI 的源提交上建立版本标签，并分发本次摘要对应的归档。

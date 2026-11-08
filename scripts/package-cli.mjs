@@ -20,7 +20,6 @@ for(const file of readdirSync(join(root,'examples'))) {
   if(/\.(xml|json|md)$/.test(file)) copyFileSync(join(root,'examples',file),join(output,'examples',file));
 }
 cpSync(join(root,'examples/scenarios'),join(output,'examples/scenarios'),{recursive:true});
-copyFileSync(join(root,'project.md'),join(output,'project.md'));
 assert.equal(existsSync(join(output,'moon.mod')),false);
 const p=spawnSync(process.execPath,[join(output,'bin/junit-delta.mjs'),'compare','--baseline','examples/baseline.xml','--candidate','examples/candidate.xml','--format','json'],{cwd:output,encoding:'utf8',timeout:30000});
 assert.ifError(p.error); assert.equal(p.status,1,p.stderr);

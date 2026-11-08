@@ -11,3 +11,11 @@ __pycache__/
 *.pem
 *.key
 /examples/consumer/
+
+/project.md
+/docs/HACKATHON.md
+/docs/SUBMISSION.md
+.env
+.env.*
+*.log
+*.tmp
