@@ -1,3 +1,4 @@
 import {
-  "Milky2018/xml" @xml,
+  "Milky2018/xml",
+  "moonbitlang/core/json",
 }

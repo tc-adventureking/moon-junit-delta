@@ -1,0 +1,7 @@
+<testsuite name="example">
+  <testcase classname="app" name="parse configuration" time="0.08"><failure message="expected a default value"/></testcase>
+  <testcase classname="app" name="render output" time="0.12"/>
+  <testcase classname="app" name="load report" time="1.00"/>
+  <testcase classname="app" name="retry request" time="0.08"><flakyFailure message="first attempt timed out"/></testcase>
+  <testcase classname="app" name="new test" time="0.01"><error message="fixture unavailable"/></testcase>
+</testsuite>

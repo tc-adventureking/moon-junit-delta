@@ -1,0 +1,4 @@
+<testsuite name="example">
+  <testcase classname="app" name="parse configuration" time="0.10"><failure message="earlier intermittent failure"/></testcase>
+  <testcase classname="app" name="load report" time="0.40"/>
+</testsuite>

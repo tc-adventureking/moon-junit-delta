@@ -1,0 +1,8 @@
+import {
+  "tc-adventureking/junit_delta" @delta,
+  "moonbitlang/core/json",
+}
+
+pkgtype(kind: "executable")
+
+supported_targets = "js"

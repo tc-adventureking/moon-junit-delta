@@ -2,59 +2,140 @@
 package "tc-adventureking/junit_delta"
 
 // Values
+pub fn classify(Outcome?, Outcome?) -> String
+
+pub fn compare(Array[Report], Report, config? : DiffConfig) -> DiffResult raise InputError
+
+pub fn default_config() -> DiffConfig
+
+pub fn diff_config(slowdown_pct? : Int32, slowdown_floor_us? : Int64, fail_on? : Array[String]) -> DiffConfig raise InputError
+
+pub fn evaluate_request(String) -> Json
+
 pub fn merge_reports(Array[Report], duplicates? : DuplicatePolicy) -> Report raise InputError
+
+pub fn parse_document(String, source? : String) -> Report raise InputError
 
 pub fn parse_duration(String) -> Int64? raise InputError
 
 pub fn parse_report(String, source? : String, duplicates? : DuplicatePolicy) -> Report raise InputError
 
+pub fn run_cli(Array[String], (String) -> String raise) -> CliResult
+
+pub fn usage() -> String
+
 // Errors
 pub(all) suberror InputError {
   InvalidInput(String)
-} derive(Eq, Show)
+  Rejected(String, String)
+} derive(Eq)
+pub fn InputError::equal(Self, Self) -> Bool
+pub fn InputError::not_equal(Self, Self) -> Bool
+pub fn InputError::output(Self, &Logger) -> Unit
+pub fn InputError::to_string(Self) -> String
+pub impl Show for InputError
 
 // Types and methods
-type CaseBuilder
+pub struct CliResult {
+  stdout : String
+  stderr : String
+  status : Int32
+}
 
 pub struct Diagnostic {
   source : String
   code : String
   message : String
-} derive(Eq, Show)
+} derive(Eq)
+pub fn Diagnostic::equal(Self, Self) -> Bool
+pub fn Diagnostic::not_equal(Self, Self) -> Bool
+
+pub struct DiffConfig {
+  slowdown_pct : Int32
+  slowdown_floor_us : Int64
+  fail_on : Array[String]
+}
+
+pub struct DiffEntry {
+  id : TestId
+  category : String
+  before : TestCase?
+  after : TestCase?
+  baseline_time_us : Int64?
+  slowdown : Bool
+  known_flaky : Bool
+}
+
+pub struct DiffResult {
+  entries : Array[DiffEntry]
+  diagnostics : Array[Diagnostic]
+  violations : Array[String]
+  baseline_count : Int32
+  candidate_count : Int32
+  history_count : Int32
+}
+pub fn DiffResult::exit_code(Self) -> Int32
+pub fn DiffResult::to_json(Self) -> Json
+pub fn DiffResult::to_json_string(Self) -> String
+pub fn DiffResult::to_markdown(Self, limit? : Int32) -> String
+pub fn DiffResult::to_text(Self) -> String
 
 pub(all) enum DuplicatePolicy {
   Reject
   Attempts
-} derive(Eq, Show)
+} derive(Eq)
+pub fn DuplicatePolicy::equal(Self, Self) -> Bool
+pub fn DuplicatePolicy::not_equal(Self, Self) -> Bool
 
 pub(all) enum Outcome {
   Passed
   Failed
   Errored
   Skipped
-} derive(Eq, Show)
+} derive(Eq)
+pub fn Outcome::equal(Self, Self) -> Bool
 pub fn Outcome::label(Self) -> String
+pub fn Outcome::not_equal(Self, Self) -> Bool
 
 pub struct Report {
   cases : Array[TestCase]
   diagnostics : Array[Diagnostic]
-} derive(Eq, Show)
+} derive(Eq)
+pub fn Report::equal(Self, Self) -> Bool
+pub fn Report::not_equal(Self, Self) -> Bool
+pub fn Report::to_json(Self) -> Json
 
 pub struct TestCase {
   id : TestId
+  name : String
+  classname : String?
+  final_results : Array[String]
+  interim_results : Array[String]
+  suite_order : Int32
+  document_order : Int32
   outcome : Outcome
   attempts : Int32
   flaky : Bool
   time_us : Int64?
   message : String
   source : String
-} derive(Eq, Show)
+} derive(Eq)
+pub fn TestCase::equal(Self, Self) -> Bool
+pub fn TestCase::is_error(Self) -> Bool
+pub fn TestCase::is_failure(Self) -> Bool
+pub fn TestCase::is_flaky(Self) -> Bool
+pub fn TestCase::is_passed(Self) -> Bool
+pub fn TestCase::is_rerun(Self) -> Bool
+pub fn TestCase::is_skipped(Self) -> Bool
+pub fn TestCase::not_equal(Self, Self) -> Bool
 
 pub(all) enum TestId {
   Class(String, String)
   SuitePath(Array[String], String)
-} derive(Eq, Show)
+} derive(Eq)
+pub fn TestId::equal(Self, Self) -> Bool
 pub fn TestId::key(Self) -> String
+pub fn TestId::not_equal(Self, Self) -> Bool
 pub fn TestId::to_json(Self) -> Json
 
 // Type aliases

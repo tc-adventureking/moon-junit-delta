@@ -1,0 +1,19 @@
+name: Verify
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '24'
+      - name: Install MoonBit stable
+        run: |
+          curl --fail --silent --show-error --location https://cli.moonbitlang.com/install/unix.sh -o "$RUNNER_TEMP/install-moon.sh"
+          bash "$RUNNER_TEMP/install-moon.sh"
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - run: bash scripts/verify.sh
