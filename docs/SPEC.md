@@ -11,7 +11,7 @@
 
 XML 属性正规化后不再 trim、折叠空白或 Unicode 正规化。file、line、timestamp 不参与身份；同类中同名测试应由生产者提供参数化名称。两个无名、同路径套件中的同名用例会触发重复，不能通过文件顺序补造身份。
 
-`parse_document` 保留全部记录，按 junitparser 的套件遍历顺序返回；每条记录另存 `document_order`。`parse_report` 按原文顺序归并，`merge_reports` 按参数中报告顺序归并。重复默认报错；`Attempts` 取最后记录的 outcome、time、message、source，累加 attempts，并在曾出现不同 outcome 或任一记录带 flaky 标记时标注 flaky。
+`parse_document` 保留全部记录，按 junitparser 的套件遍历顺序返回；每条记录另存 `document_order`。`parse_report` 按原文顺序归并，`merge_reports` 按参数中报告顺序归并。重复默认报错；`Attempts` 取最后记录的 outcome、time、message、source，累加 attempts。只有曾混合通过与失败/错误，或任一记录带 flaky 标记，才标注 flaky；error 与 failure 的切换不算 flaky。skipped 与其他状态混合归并拒绝为 `retry_conflict`，避免后续跳过掩盖失败；重复 skipped 可以归并。套件缺少 name 与显式空 name 均使用空字符串路径分量。
 
 ## 结果与重试
 
@@ -26,7 +26,7 @@ XML 属性正规化后不再 trim、折叠空白或 Unicode 正规化。file、l
 | failure/error + flaky（可兼有 rerun） | failed/errored | 1 + 临时结果数 | true，并给诊断 |
 | skipped + retry；无 failure/error 的 rerun | 输入错误 | — | — |
 
-只读取结果元素的 message 和文本，最多 2,048 UTF-16 代码单元。system-out/system-err 不进入消息；输出 Markdown 将控制语法与 HTML 转义。未知元素每个不同名称产生一条诊断；嵌在未知元素中的已知结果拒绝。
+只读取结果元素的 message 和文本，最多 2,048 UTF-16 代码单元；截断不会切开代理对。system-out/system-err 不进入消息；输出 Markdown 将控制语法与 HTML 转义。未知元素每个不同名称产生一条诊断；嵌在未知元素中的已知结果拒绝。
 
 ## 分类矩阵
 

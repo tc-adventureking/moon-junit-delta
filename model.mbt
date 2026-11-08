@@ -170,10 +170,19 @@ pub fn merge_reports(
           if old.attempts > 1000000 - current.attempts {
             raise InvalidInput("too many attempts for \{key}")
           }
+          if old.outcome != current.outcome &&
+            (old.outcome == Skipped || current.outcome == Skipped) {
+            raise Rejected(
+              "retry_conflict",
+              "\{key}: skipped attempt mixed with another outcome (\{old.source}, \{current.source})",
+            )
+          }
           cases[i] = {
             ..current,
             attempts: old.attempts + current.attempts,
-            flaky: old.flaky || current.flaky || old.outcome != current.outcome,
+            flaky: old.flaky ||
+            current.flaky ||
+            (old.outcome == Passed) != (current.outcome == Passed),
           }
           diagnostics.push(
             diagnostic(

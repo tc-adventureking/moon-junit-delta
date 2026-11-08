@@ -73,6 +73,69 @@ test "cross-file duplicate merge uses declared order" {
 }
 
 ///|
+test "attempt merging rejects skipped conflicts and distinguishes failure kinds" {
+  let pass = parse_report("<testsuite><testcase name='x'/></testsuite>")
+  let fail = parse_report(
+    "<testsuite><testcase name='x'><failure/></testcase></testsuite>",
+  )
+  let error = parse_report(
+    "<testsuite><testcase name='x'><error/></testcase></testsuite>",
+  )
+  let skip = parse_report(
+    "<testsuite><testcase name='x'><skipped/></testcase></testsuite>",
+  )
+  for
+    reports in [
+      [fail, skip],
+      [skip, fail],
+      [pass, skip],
+      [skip, pass],
+      [error, skip],
+    ] {
+    assert_true(
+      try {
+        ignore(merge_reports(reports, duplicates=Attempts))
+        false
+      } catch {
+        Rejected("retry_conflict", _) => true
+        _ => false
+      },
+    )
+  }
+  assert_false(merge_reports([error, fail], duplicates=Attempts).cases[0].flaky)
+  assert_false(merge_reports([fail, error], duplicates=Attempts).cases[0].flaky)
+  assert_eq(
+    merge_reports([skip, skip], duplicates=Attempts).cases[0].attempts,
+    2,
+  )
+  assert_true(
+    merge_reports([fail, pass, error], duplicates=Attempts).cases[0].flaky,
+  )
+}
+
+///|
+test "message truncation preserves complete Unicode scalar values" {
+  for prefix_length in [2046, 2047, 2048] {
+    let prefix = "a".repeat(prefix_length)
+    for
+      body in [
+        "<failure message='\{prefix}😀z'/>",
+        "<failure>\{prefix}😀z</failure>",
+      ] {
+      let r = parse_report(
+        "<testsuite><testcase name='x'>\{body}</testcase></testsuite>",
+      )
+      let expected = if prefix_length == 2046 {
+        prefix + "😀"
+      } else {
+        prefix
+      }
+      assert_eq(r.cases[0].message, expected)
+    }
+  }
+}
+
+///|
 test "Surefire retry outcome combinations fail closed" {
   let inputs = [
     ("<failure/><rerunFailure/>", "failed", 2, false),

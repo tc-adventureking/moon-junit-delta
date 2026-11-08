@@ -14,8 +14,8 @@ node scripts/scale.mjs
 
 | 检查 | 实际执行范围 | 结果 |
 |---|---|---|
-| MoonBit 核心 | 29 个测试块，在 wasm、wasm-gc、js、native 各运行一次 | 116 次执行通过，零告警 |
-| 比较独立差分 | 700 组随机/边界比较，独立 Python 标准库与 Decimal 参考；另有四类夹具 | 零差异 |
+| MoonBit 核心 | 31 个测试块，在 wasm、wasm-gc、js、native 各运行一次 | 124 次执行通过，零告警 |
+| 比较独立差分 | 700 组随机/边界输入：437 组比较一致、263 组预期 retry_conflict 拒绝；独立 Python 标准库与 Decimal 参考，另有四类夹具 | 零差异 |
 | 成熟库动态差分 | 实际 junitparser 5.0.3；1,053 份共同支持输入与 26 份明确拒绝输入 | 1,079 份零未解释差异 |
 | CLI 端到端 | 真正的 Node 进程、文件/stdin、UTF-8/BOM、错误码、JSONL、历史与分片 | 24 项通过 |
 | 公共成熟库回归向量 | 207 份保存的独立期望，Node CLI 实际解析 | 181 匹配 + 26 拒绝，零差异 |
@@ -34,7 +34,7 @@ cmp fixtures/junitparser-contract.json _build/reference/oracle.json
 
 Windows 将 venv 解释器路径换为 `_build/reference/venv/Scripts/python.exe`，用文件摘要或二进制比较代替 `cmp`。公共 CI 同时执行全部动态差分、207 份保存的期望回放及再生文件逐字节一致性检查。程序默认不改期望文件，只有显式 `--write-oracle` 才刷新受版本控制的向量。
 
-29 个测试块包含 35 组状态转换以及更多循环内断言，不把断言数量冒称为独立测试数。真实 Node 夹具与上游 pytest 夹具、有意构造的 Surefire/GitLab/pytest 示例分别说明来源；没有声称执行 Maven 或 GitLab 服务。
+31 个测试块包含 35 组状态转换以及更多循环内断言，不把断言数量冒称为独立测试数。真实 Node 夹具与上游 pytest 夹具、有意构造的 Surefire/GitLab/pytest 示例分别说明来源；没有声称执行 Maven 或 GitLab 服务。
 
 ## 规模检查
 

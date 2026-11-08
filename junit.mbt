@@ -39,7 +39,7 @@ fn CaseBuilder::finish(
   if outer_failure && self.flaky_count > 0 {
     diagnostics.push(
       diagnostic(
-        source, "contradictory_retry", "outer failure/error overrides flaky markers",
+        source, "contradictory_retry", "outcome is failure/error; flaky markers retained",
       ),
     )
   }
@@ -80,12 +80,18 @@ fn CaseBuilder::finish(
 fn append_message(builder : CaseBuilder, text : String) -> Unit {
   let remaining = 2048 - builder.message.length()
   if remaining > 0 {
-    let take = if text.length() > remaining {
-      text[:remaining].to_owned()
+    let mut n = if text.length() > remaining {
+      remaining
     } else {
-      text
+      text.length()
     }
-    builder.message = builder.message + take
+    if n < text.length() &&
+      n > 0 &&
+      text[n - 1] >= 0xD800 &&
+      text[n - 1] <= 0xDBFF {
+      n = n - 1
+    }
+    builder.message = builder.message + text[:n].to_owned()
   }
 }
 
@@ -133,6 +139,9 @@ pub fn parse_document(
         let depth = tags.length() + 1
         if depth > 128 {
           raise Rejected("limit_exceeded", "\{source}: XML depth exceeds 128")
+        }
+        if root_seen && depth == 1 {
+          raise Rejected("invalid_structure", "\{source}: multiple XML roots")
         }
         if !root_seen {
           if tag != "testsuite" && tag != "testsuites" {
