@@ -115,6 +115,11 @@ test "attempt merging rejects skipped conflicts and distinguishes failure kinds"
 
 ///|
 test "message truncation preserves complete Unicode scalar values" {
+  let prefix = "a".repeat(2047)
+  let split = parse_report(
+    "<testsuite><testcase name='x'><failure message='\{prefix}😀'>z</failure></testcase></testsuite>",
+  )
+  assert_eq(split.cases[0].message, prefix)
   for prefix_length in [2046, 2047, 2048] {
     let prefix = "a".repeat(prefix_length)
     for
@@ -137,6 +142,20 @@ test "message truncation preserves complete Unicode scalar values" {
 
 ///|
 test "Surefire retry outcome combinations fail closed" {
+  assert_true(
+    try {
+      ignore(
+        parse_report(
+          "<testsuite><testcase name='x'><failure/></testcase><testcase name='x'><skipped/></testcase></testsuite>",
+          duplicates=Attempts,
+        ),
+      )
+      false
+    } catch {
+      Rejected("retry_conflict", _) => true
+      _ => false
+    },
+  )
   let inputs = [
     ("<failure/><rerunFailure/>", "failed", 2, false),
     ("<error/><rerunError/>", "errored", 2, false),

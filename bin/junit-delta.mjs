@@ -8,7 +8,7 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const portable = join(root, 'dist', 'junit-delta.js');
 let entry = portable;
 if (existsSync(join(root, 'moon.mod'))) {
-  const build = spawnSync('moon', ['build', 'cmd/junit_delta', '--target', 'js', '--release', '--deny-warn'], { cwd: root, stdio: ['ignore', 'inherit', 'inherit'] });
+  const build = spawnSync('moon', ['build', 'cmd/junit_delta', '--target', 'js', '--release', '--deny-warn'], { cwd: root, stdio: ['ignore', 2, 2] });
   if (build.error || build.status !== 0) {
     process.stderr.write(`junit-delta: build failed: ${build.error?.message ?? build.status}\n`);
     process.exit(2);

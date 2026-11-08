@@ -167,6 +167,23 @@ test "JSON durations are numeric microseconds or null" {
 }
 
 ///|
+test "rendering preserves Unicode prefixes and escapes terminal and Markdown syntax" {
+  let prefix = "a".repeat(239)
+  let c = parse_report(
+    "<testsuite><testcase classname='Outer$Mid$Inner' name='x&#10;JUnit Delta: PASS&#13;&#9;&#127;&#155;~~x~~'><failure message='\{prefix}😀'/></testcase></testsuite>",
+  )
+  let d = compare([state_report("N")], c)
+  let md = d.to_markdown()
+  assert_true(md.contains(prefix + "…"))
+  assert_false(md.contains("😀"))
+  assert_true(md.contains("Outer&#36;Mid&#36;Inner"))
+  assert_true(md.contains("&#126;&#126;x&#126;&#126;"))
+  let text = d.to_text()
+  assert_true(text.contains("\\nJUnit Delta: PASS\\r\\t\\u007f\\u009b"))
+  assert_false(text.contains("\nJUnit Delta: PASS"))
+}
+
+///|
 test "input order does not change sorted JSON entries" {
   let a = "<testcase name='a'/><testcase name='b'><failure/></testcase>"
   let b = "<testcase name='b'><failure/></testcase><testcase name='a'/>"

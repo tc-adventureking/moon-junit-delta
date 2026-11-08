@@ -14,13 +14,15 @@ node scripts/scale.mjs
 
 | 检查 | 实际执行范围 | 结果 |
 |---|---|---|
-| MoonBit 核心 | 31 个测试块，在 wasm、wasm-gc、js、native 各运行一次 | 124 次执行通过，零告警 |
+| MoonBit 核心 | 32 个测试块，在 wasm、wasm-gc、js、native 各运行一次 | 128 次执行通过，零告警 |
 | 比较独立差分 | 700 组随机/边界输入：437 组比较一致、263 组预期 retry_conflict 拒绝；独立 Python 标准库与 Decimal 参考，另有四类夹具 | 零差异 |
 | 成熟库动态差分 | 实际 junitparser 5.0.3；1,053 份共同支持输入与 26 份明确拒绝输入 | 1,079 份零未解释差异 |
 | CLI 端到端 | 真正的 Node 进程、文件/stdin、UTF-8/BOM、错误码、JSONL、历史与分片 | 24 项通过 |
 | 公共成熟库回归向量 | 207 份保存的独立期望，Node CLI 实际解析 | 181 匹配 + 26 拒绝，零差异 |
 | 源码包与消费者 | 官方 ZIP 在仓库外解压；消费者每目标 2 个公共 API 测试 | 四目标合计 8 次执行通过 |
 | 便携 CLI | 不含 MoonBit manifest 的目录，由真实启动器读取黄金示例 | 退出码与完整 JSON 一致 |
+| 三个完整场景 | 源码及 Windows 便携包；回归、重试、迁移加两种分支 | 各 5 条命令通过，4 份黄金报告符合 Schema |
+| 重复构建 | 同源提交及工具链独立构建两次 | 三个 ZIP 与两个摘要文件逐字节相同 |
 | 输出协议 Schema | Ajv 8.20.0 的严格 Draft 2020-12 校验 | 黄金报告通过，8 个非法报告反例全部拒绝 |
 
 成熟库参考 wheel 的 SHA-256 与投影字段见 [COMPATIBILITY](COMPATIBILITY.md)。完整生成语料固定种子为 `20261109`，公开工具可在隔离环境重新执行真实 Python 库：
@@ -34,13 +36,13 @@ cmp fixtures/junitparser-contract.json _build/reference/oracle.json
 
 Windows 将 venv 解释器路径换为 `_build/reference/venv/Scripts/python.exe`，用文件摘要或二进制比较代替 `cmp`。公共 CI 同时执行全部动态差分、207 份保存的期望回放及再生文件逐字节一致性检查。程序默认不改期望文件，只有显式 `--write-oracle` 才刷新受版本控制的向量。
 
-31 个测试块包含 35 组状态转换以及更多循环内断言，不把断言数量冒称为独立测试数。真实 Node 夹具与上游 pytest 夹具、有意构造的 Surefire/GitLab/pytest 示例分别说明来源；没有声称执行 Maven 或 GitLab 服务。
+32 个测试块包含 35 组状态转换以及更多循环内断言，不把断言数量冒称为独立测试数。真实 Node 夹具与上游 pytest 夹具、有意构造的 Surefire/GitLab/pytest 示例分别说明来源；没有声称执行 Maven 或 GitLab 服务。
 
 ## 规模检查
 
 `node scripts/scale.mjs` 创建两份各 20,000 个用例的报告，只把一个通过改为失败。它检查 1 个 new_failure、19,999 个 unchanged 和三次完整 JSON 的同一 SHA-256；打印主机、CPU、Node 版本与包含进程启动/I/O/JSON 输出的墙钟耗时。
 
-本机 Node.js 24.22.1 / Windows x64 / Intel Core i9-14900HX 的三次结果为 1.204、1.111、1.078 秒；完整输出 SHA-256 均为 `01cf73878d173cf99f45045b01f35576ddd60fef25f7e015712942bf6d48af37`。该数据仅描述这个合成输入与当前环境，不是跨机器吞吐保证、内存上界或相对其他库的速度优势。资源拒绝边界另见 [SPEC](SPEC.md)。
+本机 Node.js 24.22.1 / Windows x64 / Intel Core i9-14900HX 的三次结果为 0.562、0.568、0.568 秒；完整输出 SHA-256 均为 `01cf73878d173cf99f45045b01f35576ddd60fef25f7e015712942bf6d48af37`。该数据仅描述这个合成输入与当前环境，不是跨机器吞吐保证、内存上界或相对其他库的速度优势。资源拒绝边界另见 [SPEC](SPEC.md)。
 
 ## 打包与 CI
 

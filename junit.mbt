@@ -13,6 +13,7 @@ priv struct CaseBuilder {
   mut flaky_count : Int32
   mut rerun_count : Int32
   mut message : String
+  mut message_truncated : Bool
 }
 
 ///|
@@ -78,21 +79,13 @@ fn CaseBuilder::finish(
 
 ///|
 fn append_message(builder : CaseBuilder, text : String) -> Unit {
-  let remaining = 2048 - builder.message.length()
-  if remaining > 0 {
-    let mut n = if text.length() > remaining {
-      remaining
-    } else {
-      text.length()
-    }
-    if n < text.length() &&
-      n > 0 &&
-      text[n - 1] >= 0xD800 &&
-      text[n - 1] <= 0xDBFF {
-      n = n - 1
-    }
-    builder.message = builder.message + text[:n].to_owned()
+  if builder.message_truncated {
+    return
   }
+  let remaining = 2048 - builder.message.length()
+  let prefix = truncate_utf16(text, remaining)
+  builder.message_truncated = prefix.length() < text.length()
+  builder.message = builder.message + prefix
 }
 
 ///|
@@ -230,6 +223,7 @@ pub fn parse_document(
             flaky_count: 0,
             rerun_count: 0,
             message: "",
+            message_truncated: false,
           })
           case_depth = depth
         } else if tag == "failure" ||

@@ -113,6 +113,8 @@ fn safe_cell(text : String) -> String {
       ']' => builder.write_string("&#93;")
       '*' => builder.write_string("&#42;")
       '_' => builder.write_string("&#95;")
+      '$' => builder.write_string("&#36;")
+      '~' => builder.write_string("&#126;")
       '\\' => builder.write_string("&#92;")
       '\n' | '\r' | '\t' => builder.write_string(" ")
       _ => if ch.to_int() >= 32 && ch.to_int() != 127 { builder.write_char(ch) }
@@ -166,7 +168,7 @@ pub fn DiffResult::to_markdown(
     shown = shown + 1
     let message = entry.after.map(c => c.message).unwrap_or("")
     let short = if message.length() > 240 {
-      message[:240].to_owned() + "…"
+      truncate_utf16(message, 240) + "…"
     } else {
       message
     }
@@ -200,9 +202,9 @@ pub fn DiffResult::to_text(self : DiffResult) -> String {
     if entry.category != "unchanged" ||
       entry.slowdown ||
       entry.after.map(c => c.flaky).unwrap_or(false) {
-      // JSON encodes control characters rather than emitting terminal escapes.
+      // JSON already escapes C0; also escape DEL and C1 terminal controls.
       builder.write_string(
-        "\{entry.category}\t\{entry.id.key()}\t\{entry_note(entry)}\n",
+        "\{entry.category}\t\{terminal_text(entry.id.key())}\t\{entry_note(entry)}\n",
       )
     }
   }
