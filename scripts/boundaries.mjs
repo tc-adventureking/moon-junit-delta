@@ -36,6 +36,8 @@ try {
   assert.equal(parse('events-2M','<testsuite>'+'<x/>'.repeat(1_999_997)+'</testsuite>').ok,true);
   assert.equal(parse('events-over-2M','<testsuite>'+'<x/>'.repeat(1_999_998)+'</testsuite>',2).error_code,'limit_exceeded');
   assert.equal(parse('attribute-preflight','<testsuite '+Array.from({length:50000},(_,i)=>`a${i}="x"`).join(' ')+'/>',2).error_code,'limit_exceeded');
+  const dense='<x '+Array.from({length:1024},(_,i)=>`a${i}=''`).join(' ')+'/>';
+  assert.equal(parse('dense-attributes-near-10M','<testsuite>'+dense.repeat(Math.floor(9_900_000/dense.length))+'</testsuite>').ok,true);
   const xmlfile=join(scratch,'shared.xml');
   writeFileSync(xmlfile,'<testsuite name="'+'x'.repeat(200000)+'">'+Array.from({length:50000},(_,i)=>`<testcase name="t${i}"/>`).join('')+'</testsuite>');
   const compare=['compare','--baseline',xmlfile,'--candidate',xmlfile];

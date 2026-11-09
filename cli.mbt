@@ -69,40 +69,7 @@ pub fn run_cli(
       if input.length() > 20000000 {
         raise InvalidInput("JSONL input limit exceeded")
       }
-      let out = StringBuilder()
-      let mut status = 0
-      let mut output_units = 0
-      let mut line_number = 0
-      for line in input.split("\n") {
-        line_number = line_number + 1
-        if line.trim().is_empty() {
-          continue
-        }
-        let result = evaluate_request(line.to_owned())
-        let code = integer_field(result, "exit_code", 2L, 2L).to_int()
-        if code > status {
-          status = code
-        }
-        let rendered = result.stringify() + "\n"
-        if rendered.length() > 100000000 - output_units - 512 {
-          out.write_string(
-            (
-              {
-                "ok": false,
-                "exit_code": 2,
-                "error_code": "output_limit",
-                "error": "JSONL output limit exceeded; remaining lines were not processed",
-                "line": Json(line_number),
-              } : Json).stringify() +
-            "\n",
-          )
-          status = 2
-          break
-        }
-        output_units = output_units + rendered.length()
-        out.write_string(rendered)
-      }
-      return { stdout: out.to_string(), stderr: "", status, }
+      return run_jsonl(input)
     }
     if args.is_empty() || args[0] != "compare" {
       raise InvalidInput(usage())
@@ -196,4 +163,64 @@ pub fn run_cli(
         status: 2,
       }
   }
+}
+
+///|
+fn jsonl_limit_line(line_number : Int32) -> String {
+  (
+    {
+      "ok": false,
+      "exit_code": 2,
+      "error_code": "output_limit",
+      "error": "JSONL output limit exceeded; remaining lines were not processed",
+      "line": Json(line_number),
+    } : Json).stringify() +
+  "\n"
+}
+
+///|
+fn run_jsonl(
+  input : String,
+  output_limit~ : Int32 = 100000000,
+) -> CliResult raise InputError {
+  let out = StringBuilder()
+  let mut status = 0
+  let mut output_units = 0
+  let mut line_number = 0
+  for line in input.split("\n") {
+    line_number = line_number + 1
+    if line.trim().is_empty() {
+      continue
+    }
+    let remaining = output_limit - output_units - 512
+    // Reserve a complete final error plus the success envelope and newline.
+    if remaining < 64 {
+      out.write_string(jsonl_limit_line(line_number))
+      status = 2
+      break
+    }
+    let result = evaluate_request_limited(
+      line.to_owned(),
+      (remaining - 64).to_int64(),
+    )
+    if result is { "ok": false, "error_code": "output_limit", .. } {
+      out.write_string(jsonl_limit_line(line_number))
+      status = 2
+      break
+    }
+    let code = integer_field(result, "exit_code", 2L, 2L).to_int()
+    if code > status {
+      status = code
+    }
+    let rendered = result.stringify() + "\n"
+    // Also covers bounded parse/validation errors when little room remains.
+    if rendered.length() > remaining {
+      out.write_string(jsonl_limit_line(line_number))
+      status = 2
+      break
+    }
+    output_units = output_units + rendered.length()
+    out.write_string(rendered)
+  }
+  { stdout: out.to_string(), stderr: "", status, }
 }

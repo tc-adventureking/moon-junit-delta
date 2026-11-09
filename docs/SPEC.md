@@ -68,4 +68,6 @@ JSON `schema_version=1`，完整 entries 按 `(category, ID JSON)` 字典序排�
 
 渲染上限为 100,000,000 UTF-16 单元，在展开重复身份及来源前计量；公共渲染方法可用 `max_units` 调低，超限抛出 `InputError::Rejected("output_limit", ...)`。比较本身不受输出上限影响，可用 Markdown `limit=0` 查看概要。JSONL 整批输出同样有界；达到上限时保留此前完整结果，追加带原始行号的 `output_limit` 错误并停止处理后续行。JSONL 协议包装预留少量空间，因此可能在整批上限前结束。
 
+`to_json` 的计量针对默认紧凑 `stringify()`（无缩进、`escape_slash=false`）；调用方取得 Json 后额外缩进、转义或修改内容，需要自行管理新的输出大小。文本和 Markdown 方法计量其实际返回字符串。
+
 重复归并后单个 ID 的 attempts 不超过 1,000,000。XML、JSON 重复属性/键拒绝；DTD、命名空间化的 JUnit 元素和非 UTF-8 声明不受支持。根节点可携带 Surefire 的 `xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"` 和 `xsi:noNamespaceSchemaLocation`，二者只作元数据，schema URL 从不读取；其他命名空间属性拒绝。CLI 不执行报告中的代码，不读取实体地址，也不访问网络。

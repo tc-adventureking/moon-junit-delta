@@ -274,3 +274,82 @@ test "public retry and history limits include exact boundaries" {
     },
   )
 }
+
+///|
+test "merged identity and source caches stay consistent with rendered fields" {
+  let xml = "<testsuite name='suite'><testcase name='fallback'/><testcase classname='class' name='named'/></testsuite>"
+  let first = parse_report(xml, source="a")
+  let last = parse_report(xml, source="different\nsource\"\\😀")
+  let merged = merge_reports([first, last], duplicates=Attempts)
+  for c in merged.cases {
+    let name = match c.id {
+      Class(_, name) | SuitePath(_, name) => name
+    }
+    assert_eq(c.name, name)
+    assert_eq(c.source_units, string_json_units(c.source))
+    assert_eq(c.source, "different\nsource\"\\😀")
+  }
+  let json = merged.to_json().stringify()
+  assert_eq(
+    merged.to_json(max_units=json.length().to_int64()).stringify(),
+    json,
+  )
+  assert_true(
+    try {
+      ignore(merged.to_json(max_units=json.length().to_int64() - 1L))
+      false
+    } catch {
+      Rejected("output_limit", _) => true
+      _ => false
+    },
+  )
+}
+
+///|
+test "JSONL passes the remaining budget to rendering and preserves physical line numbers" {
+  let document : Json = {
+    "op": "parse",
+    "document": {
+      "xml": "<testsuite><testcase name='x'/></testsuite>",
+      "source": "x".repeat(2000),
+    },
+  }
+  let request = document.stringify()
+  let expected = evaluate_request(request).stringify() + "\n"
+  assert_true(jsonl_limit_line(2147483647).length() <= 512)
+  let response = evaluate_request(request)
+  guard response is { "report": report, .. } else { fail("missing report") }
+  assert_eq(expected.length(), report.stringify().length() + 36)
+  let result = run_jsonl(
+    request + "\r\n\r\n" + request + "\r\n" + request,
+    output_limit=expected.length() + 1100,
+  )
+  assert_eq(result.status, 2)
+  let lines = result.stdout.split("\n").map(s => s.to_owned()).to_array()
+  assert_eq(lines.length(), 3)
+  assert_eq(lines[0] + "\n", expected)
+  assert_true(
+    @json.parse(lines[1]) is { "error_code": "output_limit", "line": 3, .. },
+  )
+  assert_true(
+    evaluate_request_limited(request, 1000L)
+    is { "ok": false, "error_code": "output_limit", .. },
+  )
+  let crlf = run_cli(["jsonl"], _ => request + "\r\n\r\n" + request + "\r\n")
+  assert_eq(crlf.status, 0)
+  assert_eq(crlf.stdout, expected + expected)
+}
+
+///|
+test "XML preflight cannot bypass strict malformed comment or PI validation" {
+  let attrs = StringBuilder()
+  for i = 0; i < 2000; i = i + 1 {
+    attrs.write_string(" a\{i}='x'")
+  }
+  for prefix in ["<!-->", "<!--->", "<?>"] {
+    assert_true(
+      rejects(prefix + "<testsuite\{attrs.to_string()}/><!----><?x?>"),
+    )
+  }
+  assert_true(rejects("<!ABCDEF😀"))
+}

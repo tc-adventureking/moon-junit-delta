@@ -15,7 +15,7 @@ node scripts/boundaries.mjs
 
 | 检查 | 实际执行范围 | 结果 |
 |---|---|---|
-| MoonBit 核心 | 47 个测试块，在 wasm、wasm-gc、js、native 各运行一次 | 188 次执行通过，零告警 |
+| MoonBit 核心 | 50 个测试块，在 wasm、wasm-gc、js、native 各运行一次 | 200 次执行通过，零告警 |
 | 成熟库动态差分 | 实际 junitparser 5.0.3；1,053 份共同支持输入与 26 份明确拒绝输入 | 1,079 份零未解释差异 |
 | 独立比较与畸形输入 | 固定种子 500 组历史/状态/时长比较与 1,004 份 ElementTree 确认的非法 XML | 1,504 项通过 |
 | 真实生产端 | 两代 pytest（两种 XML 家族、参数化、分片）、Surefire/JUnit（flaky、重跑）、Node24 | 24 份实际报告生成与 API 检查通过 |
@@ -38,13 +38,13 @@ cmp fixtures/junitparser-contract.json _build/reference/oracle.json
 
 Windows 将 venv 解释器路径换为 `_build/reference/venv/Scripts/python.exe`，用文件摘要或二进制比较代替 `cmp`。公共 CI 同时执行全部动态差分、207 份保存的期望回放及再生文件逐字节一致性检查。程序默认不改期望文件，只有显式 `--write-oracle` 才刷新受版本控制的向量。
 
-47 个测试块包含 35 组状态转换以及更多循环内断言，不把断言数量冒称为独立测试数。真实生产端生成脚本为 `scripts/producers.py`，配置固定为 legacy / current。GitLab 样例仍为注明来源的作者构造输入，没有声称执行 GitLab 服务。独立消费者另外验证公开只读集合的非法修改被编译器拒绝。
+50 个测试块包含 35 组状态转换以及更多循环内断言，不把断言数量冒称为独立测试数。真实生产端生成脚本为 `scripts/producers.py`，配置固定为 legacy / current。GitLab 样例仍为注明来源的作者构造输入，没有声称执行 GitLab 服务。独立消费者另外验证公开只读集合的非法修改被编译器拒绝。
 
 ## 规模检查
 
-`node scripts/scale.mjs` 创建两份各 100,000 个用例的报告，只把一个通过改为失败。它检查 1 个 new_failure、99,999 个 unchanged、三次完整 JSON 的同一 SHA-256，并记录包含启动/I/O/JSON 输出的墙钟耗时及子进程峰值 RSS。Windows x64、Node 24.22.1 本地三次耗时 2.915 / 3.010 / 2.850 秒，峰值 RSS 972,916–974,552 KiB（约 950–952 MiB）。
+`node scripts/scale.mjs` 创建两份各 100,000 个用例的报告，只把一个通过改为失败。它检查 1 个 new_failure、99,999 个 unchanged、三次完整 JSON 的同一 SHA-256，并记录包含启动/I/O/JSON 输出的墙钟耗时及子进程峰值 RSS。Windows x64、Node 24.22.1 本地三次耗时 3.015 / 2.781 / 2.805 秒，峰值 RSS 972,432–974,412 KiB（约 950–952 MiB）。
 
-`node scripts/boundaries.mjs` 验证 50/51 历史与分片、深度 128/129、XML 10M 单元、文件 20M 字节、事件 2M 的通过/拒绝边界，并检查延迟 stdin 管道、属性预检及 JSONL 整批输出上限。50,000 用例共享 200,000 字符套件名，概要比较本地耗时 0.527 秒；请求完整超大 JSON 明确拒绝，未降低比较容量。JSONL 压力输入保留 952,377 条完整结果（末条为限额错误），输出 99,999,623 单元。
+`node scripts/boundaries.mjs` 验证 50/51 历史与分片、深度 128/129、XML 10M 单元、文件 20M 字节、事件 2M 的通过/拒绝边界，并检查延迟 stdin 管道、属性预检及 JSONL 整批输出上限；1,024 属性/元素、接近 10M 单元的合法 XML 本地耗时 3.876 秒。50,000 用例共享 200,000 字符套件名，概要比较本地耗时 0.506 秒；请求完整超大 JSON 明确拒绝，未降低比较容量。JSONL 压力输入保留 952,377 条完整结果（末条为限额错误），输出 99,999,623 单元。
 
 规模脚本只说明该合成输入下的结果，不作为跨机器吞吐保证或相对其他库的速度结论。
 

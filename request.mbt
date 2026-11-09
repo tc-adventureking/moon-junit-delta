@@ -101,6 +101,11 @@ fn input_run(
 ///|
 /// Batch/embedding protocol. Errors are structured and never converted to empty reports.
 pub fn evaluate_request(text : String) -> Json {
+  evaluate_request_limited(text, 100000000L)
+}
+
+///|
+fn evaluate_request_limited(text : String, max_report_units : Int64) -> Json {
   try {
     if text.length() > 20000000 {
       raise InvalidInput("JSON request exceeds 20000000 code units")
@@ -120,7 +125,11 @@ pub fn evaluate_request(text : String) -> Json {
         string_field(doc, "xml", ""),
         source=string_field(doc, "source", "<input>"),
       )
-      return { "ok": true, "exit_code": 0, "report": report.to_json() }
+      return {
+        "ok": true,
+        "exit_code": 0,
+        "report": report.to_json(max_units=max_report_units),
+      }
     }
     if operation != "compare" {
       raise InvalidInput("unknown operation: \{operation}")
@@ -172,7 +181,7 @@ pub fn evaluate_request(text : String) -> Json {
     {
       "ok": true,
       "exit_code": Json(result.exit_code()),
-      "report": result.to_json(),
+      "report": result.to_json(max_units=max_report_units),
     }
   } catch {
     UnknownField(path) =>
