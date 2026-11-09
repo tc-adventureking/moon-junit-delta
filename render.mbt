@@ -142,6 +142,14 @@ fn entry_note(entry : DiffEntry) -> String {
 }
 
 ///|
+fn entry_has_detail(entry : DiffEntry) -> Bool {
+  entry.category != "unchanged" ||
+  entry.slowdown ||
+  entry.known_flaky ||
+  entry.after.map(c => c.flaky).unwrap_or(false)
+}
+
+///|
 pub fn DiffResult::to_markdown(
   self : DiffResult,
   limit~ : Int32 = 50,
@@ -160,9 +168,7 @@ pub fn DiffResult::to_markdown(
   )
   let mut shown = 0
   for entry in self.entries {
-    if entry.category == "unchanged" &&
-      !entry.slowdown &&
-      !entry.after.map(c => c.flaky).unwrap_or(false) {
+    if !entry_has_detail(entry) {
       continue
     }
     if shown >= limit {
@@ -202,9 +208,7 @@ pub fn DiffResult::to_text(self : DiffResult) -> String {
     "JUnit Delta: \{gate}\nBaseline \{self.baseline_count}, candidate \{self.candidate_count}, history \{self.history_count}\n",
   )
   for entry in self.entries {
-    if entry.category != "unchanged" ||
-      entry.slowdown ||
-      entry.after.map(c => c.flaky).unwrap_or(false) {
+    if entry_has_detail(entry) {
       // JSON already escapes C0; also escape DEL and C1 terminal controls.
       builder.write_string(
         "\{entry.category}\t\{terminal_text(entry.id.key())}\t\{entry_note(entry)}\n",

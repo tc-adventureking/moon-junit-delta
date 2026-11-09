@@ -71,6 +71,25 @@ test "historical flakiness cannot downgrade present failure" {
 }
 
 ///|
+test "historical annotations remain visible when current passing result is unchanged" {
+  for older in ["F", "E", "K"] {
+    let d = compare([state_report(older), state_report("P")], state_report("P"))
+    assert_eq(d.entries[0].category, "unchanged")
+    assert_true(d.entries[0].known_flaky)
+    assert_false(d.entries[0].after.unwrap().flaky)
+    assert_eq(d.exit_code(), 0)
+    assert_true(d.to_json_string().contains("\"known_flaky\":true"))
+    assert_true(d.to_markdown().contains("historically inconsistent"))
+    assert_true(d.to_text().contains("historically inconsistent"))
+    assert_true(d.to_markdown(limit=0).contains("Shown 0 details"))
+    assert_false(d.to_markdown(limit=0).contains("historically inconsistent"))
+  }
+  let stable = compare([state_report("P")], state_report("P"))
+  assert_true(stable.to_markdown().contains("Shown 0 details"))
+  assert_false(stable.to_text().contains("unchanged"))
+}
+
+///|
 test "lower median duration strict percentage inclusive floor and missing times" {
   let history = [
     state_report("P", time="1"),
