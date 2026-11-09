@@ -1,7 +1,0 @@
-<testsuite name="example">
-  <testcase classname="app" name="parse configuration" time="0.10"/>
-  <testcase classname="app" name="render output" time="0.20"><failure message="old issue"/></testcase>
-  <testcase classname="app" name="legacy scenario" time="0.03"/>
-  <testcase classname="app" name="load report" time="0.50"/>
-  <testcase classname="app" name="retry request" time="0.10"/>
-</testsuite>

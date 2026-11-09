@@ -1,8 +1,0 @@
-<testsuites>
-  <testsuite name="Web request checks">
-    <testcase classname="RequestTest" name="invalid_input" file="tests/request.test.js" time="0.23">
-      <failure message="validation changed">expected 400</failure>
-      <system-out>[[ATTACHMENT|artifacts/request.png]]</system-out>
-    </testcase>
-  </testsuite>
-</testsuites>

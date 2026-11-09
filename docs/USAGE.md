@@ -1,96 +1,112 @@
 # 使用指南
 
-Mooncakes 提供库源码与 API；以下 CLI、示例和开发脚本命令在 [GitHub 源码仓库](https://github.com/tc-adventureking/moon-junit-delta) 内运行。
+Mooncakes 提供库与 API；以下命令在源码仓库运行，需要 MoonBit 和 Node.js 24。源码启动器自动增量编译，报告写入 stdout，错误写入 stderr。
 
-## 两份报告
+## CLI 参数
 
 ```sh
-node bin/junit-delta.mjs compare --baseline examples/baseline.xml --candidate examples/candidate.xml --format json
+node bin/junit-delta.mjs compare --baseline baseline.xml --candidate current.xml --format json
 ```
-
-源码启动器要求 `moon` 在 PATH 中，会执行增量构建；便携包只需要 Node.js 24。退出码 1 表示选中的门禁命中，2 才是输入/用法错误。通过时退出码为 0。CLI 的错误信息写到 stderr，正常报告写到 stdout。
-
-## 参数
 
 | 参数 | 默认值 | 用途 |
 |---|---|---|
-| `--baseline FILE` | 必需 | 可重复，代表从旧到新的历史运行；最后一个是直接基准 |
-| `--candidate FILE` | 必需 | 可重复，合并为同一次当前运行的分片 |
+| `--baseline FILE` | 必需 | 可重复，按时间从旧到新；最后一个是直接基准 |
+| `--candidate FILE` | 必需 | 可重复，归并为当前运行的分片 |
 | `--format json\|md\|text` | text | 输出格式 |
-| `--duplicates error\|attempts` | error | 是否明确把重复 ID 当作顺序重试 |
-| `--fail-on LIST\|none` | new_failure,added_failing,removed,empty_report | 逗号分隔的门禁集合；替换默认值 |
-| `--slowdown-pct N` | 50 | 相对耗时增加阈值（严格大于） |
-| `--slowdown-floor-ms N` | 200 | 绝对增加下限（大于等于），整数毫秒 |
-| `--limit N` | 50 | Markdown 展示数量，0..100000；不影响 JSON 或判定 |
+| `--duplicates error\|attempts` | error | 是否将重复 ID 解释为有序重试 |
+| `--fail-on LIST\|none` | new_failure,added_failing,removed,empty_report | 逗号分隔，替换默认门禁集合 |
+| `--slowdown-pct N` | 50 | 相对耗时增加阈值，严格大于 |
+| `--slowdown-floor-ms N` | 200 | 绝对增加下限，大于等于，整数毫秒 |
+| `--limit N` | 50 | Markdown 展示数量，0..100000；不影响判定 |
 
-门禁全集为 `new_failure,added_failing,still_failing,removed,newly_skipped,flaky,slowdown,empty_report`。未知参数、未知门禁和重复的单值选项报错，避免拼写错误导致静默放行。
+其他可选门禁为 `still_failing,newly_skipped,flaky,slowdown`。`--fail-on none` 只输出报告。退出码 `0` 表示通过，`1` 表示门禁命中，`2` 表示输入或运行错误。单个文件名 `-` 读取标准输入；一次比较最多使用一次。
 
-`-` 作为文件名读取 stdin，一次比较最多使用一次。UTF-8 BOM 可接受；其他编码或非法 UTF-8 字节拒绝。没有 shell 通配符展开，使用多个 `--candidate` 或 JSONL 描述分片。
+## JSONL 协议
 
-## 历史与分片
-
-```sh
-# 两个基准是不同运行：旧历史、最近基准
-node bin/junit-delta.mjs compare --baseline examples/history.xml --baseline examples/baseline.xml --candidate examples/candidate.xml --format md
-```
-
-若**基准运行也有多个分片**，使用 JSONL，避免把分片误当历史。每行一个 JSON 对象：
-
-```json
-{"baselines":[[{"xml":"<testsuite><testcase name='a'/></testsuite>","source":"base-1"},{"xml":"<testsuite><testcase name='b'/></testsuite>","source":"base-2"}]],"candidate":[{"xml":"<testsuite><testcase name='a'/></testsuite>","source":"head-1"},{"xml":"<testsuite><testcase name='b'/></testsuite>","source":"head-2"}]}
-```
-
-将内容存为 UTF-8 `requests.jsonl`，运行：
+每行一个 JSON 请求。把下方任一场景的完整 JSON 保存为 UTF-8 `request.jsonl`，在 POSIX shell 中运行：
 
 ```sh
-node bin/junit-delta.mjs jsonl < requests.jsonl
+node bin/junit-delta.mjs jsonl < request.jsonl
 ```
 
-上例使用 POSIX shell 重定向。PowerShell 可用 `Get-Content -Raw -Encoding utf8 requests.jsonl | node bin/junit-delta.mjs jsonl`；源文件必须 UTF-8，终端编码也需支持输入字符。
+PowerShell 可使用 `Get-Content -Raw -Encoding utf8 request.jsonl | node bin/junit-delta.mjs jsonl`，终端编码须支持输入字符。
 
-`baselines` 外层数组是时间顺序，一个元素可为单个 document 或 document 数组。`candidate` 同样支持 document 或数组。document 字段为 `xml` 和可选 `source`（默认 `<input>`）。可选顶层字段：
+`baselines` 外层数组按时间排列；每个元素为一个 document 或同次运行的 document 数组。`candidate` 同样接受单份或分片数组。document 含 `xml` 和可选 `source`。可选字段为 `duplicates`、`fail_on`、`slowdown_pct`、`slowdown_floor_us`；JSON 的绝对时长阈值使用微秒。
+
+只读取原始报告时使用：
 
 ```json
-{"duplicates":"error","fail_on":["new_failure","added_failing","removed","empty_report"],"slowdown_pct":50,"slowdown_floor_us":200000}
+{"op":"parse","document":{"xml":"<testsuite><testcase name='a'/></testsuite>"}}
 ```
 
-JSON 协议的绝对阈值使用微秒；CLI 使用毫秒。比较请求 `op` 默认为 `compare`。仅解析原始报告：
+比较请求的 `op` 默认为 `compare`。成功响应含 `ok:true,exit_code,report`；错误响应含 `ok:false,exit_code:2,error_code,error`。未知或重复字段拒绝，每行独立处理，进程取最大退出码。空白行忽略，空输入返回 0；达到整批输出上限时追加带行号的 `output_limit` 错误并停止。
+
+## 三个使用场景
+
+### 合并请求回归检查
+
+开发者比较主分支与合并请求报告。两次都只有一个失败，但失败对象发生变化：
 
 ```json
-{"op":"parse","document":{"xml":"<testsuite><testcase name='x'/></testsuite>","source":"report.xml"}}
+{"baselines":[{"xml":"<testsuite><testcase classname='api' name='login'/><testcase classname='api' name='refresh'><failure/></testcase></testsuite>"}],"candidate":{"xml":"<testsuite><testcase classname='api' name='login'><failure/></testcase><testcase classname='api' name='refresh'/></testsuite>"}}
 ```
 
-成功响应含 `ok:true,exit_code,report`；失败响应含 `ok:false,exit_code:2,error_code,error`。每行独立处理，通常某一行失败不影响其他行；进程退出码为所有行最大值。空白行忽略，空输入返回 0。整批输出达到 100,000,000 UTF-16 单元上限时，会保留此前完整结果、追加带原始行号的 `output_limit` 错误并停止处理，详见 [资源边界](SPEC.md#资源边界)。
+运行上述 JSONL 命令，报告包含 login 的 `new_failure` 和 refresh 的 `fixed`，退出码 **1**。CI 据此阻断合并，开发者定位新增问题，同时保留修复记录。
 
-请求根对象和每个 document 都拒绝未知字段。拼错 `fail_on` 不会静默使用默认策略：响应为 `error_code:"unknown_field"`、退出码 2，并提供括号式 JSON 路径，例如 `$["baselines"][0]["sorce"]`。不同操作只接受各自的字段，`op:"parse"` 不接受比较门禁选项。
+### 重试与历史波动审查
 
-## CI 集成
+维护者提供先失败、后通过的历史，以及当前先通过、后失败的有序重试，显式启用 `attempts`：
 
-先从可信构建产物取得基准与当前 XML，再运行：
-
-```sh
-node bin/junit-delta.mjs compare --baseline baseline.xml --candidate current.xml --format md > junit-delta.md
+```json
+{"baselines":[{"xml":"<testsuite><testcase classname='api' name='login'><failure/></testcase></testsuite>"},{"xml":"<testsuite><testcase classname='api' name='login'/></testsuite>"}],"candidate":{"xml":"<testsuite><testcase classname='api' name='login'/><testcase classname='api' name='login'><failure/></testcase></testsuite>"},"duplicates":"attempts"}
 ```
 
-默认 `set -e` 的 CI shell 在门禁命中时停止，报告文件仍保留。只想先观察时用 `--fail-on none`。希望任何当前失败都阻断时，把 `still_failing` 加入列表；希望失败变跳过也阻断时，加上 `newly_skipped`。自定义列表会替换默认集合，因此需要显式保留仍想要的默认项。
+报告将最终结果列为 `new_failure`，保留历史波动与当前重试注记，退出码 **1**。维护者可以审查不稳定用例，当前失败仍阻断合并。
 
-它不会为你下载基准、上传产物、评论 PR 或重跑测试。这些操作由现有 CI 配置完成。报告字段来自输入，应按你所在 CI 的权限策略保存或公开。
+### 分片迁移完整性检查
 
-## 库入口
+CI 维护者将原有 auth、billing、audit 用例迁入两个分片；当前报告遗漏 audit：
 
-比较结果提供 [JSON Schema 2020-12](../schemas/report.schema.json)，对应 `schema_version:1`。它约束字段、ID 的两种形状、整数微秒边界和门禁状态一致性，供 CI 存储与其他语言消费时校验。它只描述比较 report，不描述请求或 `op:parse` 的原始报告；JSONL 比较响应中应校验 `report` 字段。
+```json
+{"baselines":[{"xml":"<testsuite><testcase classname='api' name='auth'/><testcase classname='api' name='billing'/><testcase classname='api' name='audit'/></testsuite>"}],"candidate":[{"xml":"<testsuite><testcase classname='api' name='auth'/></testsuite>","source":"core"},{"xml":"<testsuite><testcase classname='api' name='billing'/></testsuite>","source":"extra"}]}
+```
 
-完整开发源码使用 Ajv 8.20.0 验证所有黄金报告，并检查非法类型、负时长、错误 ID、门禁矛盾等反例：`npm ci --ignore-scripts` 后运行 `npm run check:schema`。Ajv 是开发依赖，CLI 与 MoonBit 库不需要它。请求的唯一校验入口仍为 MoonBit 的 `evaluate_request`。
+归并结果有两个 `unchanged`、一个 `removed`，退出码 **1**。维护者检查分片筛选；有意移除的用例经确认后更新基准。再次上传相同分片会因重复 ID 返回 **2**。
+
+## API 与行为约定
 
 | 入口 | 用途 |
 |---|---|
-| `parse_document(xml, source?)` | 原始 JUnit 读取，保留重复与标记 |
-| `parse_report(xml, source?, duplicates?)` | 加入测试身份和重复策略 |
+| `parse_document(xml, source?)` | 原始读取，保留重复项与独立结果标记 |
+| `parse_report(xml, source?, duplicates?)` | 建立身份并应用重复策略 |
 | `merge_reports(reports, duplicates?)` | 归并一次运行的分片 |
-| `compare(history, candidate, config?)` | 按最终基准比较，附加历史信息 |
-| `diff_config(...)` | 校验门禁与时长配置 |
+| `compare(history, candidate, config?)` | 按最后基准比较，附加历史信息 |
+| `diff_config(...)` | 校验门禁与耗时配置 |
 | `to_json / to_json_string / to_markdown / to_text` | 渲染比较结果 |
-| `evaluate_request(text)` | 无 I/O 的结构化 JSON 请求 |
-| `run_cli(args, read)` | 可注入读取函数的纯核心 CLI |
+| `evaluate_request(text)` | 无 I/O 的 JSON 请求入口 |
+| `run_cli(args, read)` | 可注入读取函数的 CLI 核心 |
 
-完整类型见 `pkg.generated.mbti`。`InputError` 由调用方处理，不能把解析错误替换为空报告。公开结构字段可读取；跨目标核心不依赖 Node，Node 仅负责文件/标准输入、UTF-8 解码与退出码。
+完整签名见[公开 API](../pkg.generated.mbti)。比较 JSON 的 [Schema](../schemas/report.schema.json) 对应 `schema_version:1`，只约束比较 report，不约束请求或原始读取结果。
+
+- 身份有 classname 时使用 `(classname, name)`，否则使用完整套件路径与名称；保留空白和大小写。支持嵌套套件及 Node 根 `testsuites` 直接包含 `testcase` 的布局，汇总属性不代替逐条结果。
+- 默认重复报错；`Attempts` 按 XML 原文及传入分片顺序采用最后记录，累加尝试次数。跳过与其他状态混合拒绝；Surefire flaky 与 rerun 标记参与重试解释。原始结果标记互相独立，最终状态优先级为 error、failure、skipped、passed。
+- 比较范围为最后基准与当前 ID 的并集；更早历史只提供波动和耗时参考。历史波动不改变分类或默认门禁。
+- 时长接受非负十进制秒数，向下截断到整数微秒，范围 `0..9,000,000,000,000`。耗时筛查只检查最后基准及当前均通过的记录，以历史通过时长的下中位数为参考，同时满足百分比与绝对增量阈值。
+- 公开集合为只读；需要可变副本时用 `items.iter().to_array()`。解析、比较及渲染可能抛出 `InputError`，调用方应处理。
+
+## 输入与输出边界
+
+| 对象 | 上限 |
+|---|---|
+| 单份 XML | 10,000,000 UTF-16 单元、深度 128、2,000,000 读取事件 |
+| XML 元素属性 | 每元素 1,024 个 |
+| 用例 | 单份或单次归并 100,000 个；单 ID 最多 1,000,000 次尝试 |
+| 历史与分片 | 50 次历史运行，每运行最多 50 份报告 |
+| CLI 输入 | 单文件/标准输入 20,000,000 字节；比较或 JSONL 合计 20,000,000 UTF-16 单元 |
+| 渲染 | 单次或 JSONL 整批 100,000,000 UTF-16 单元；可用 `max_units` 调低 |
+
+XML 采用 UTF-8，可含 BOM；拒绝 DTD、损坏结构、重复属性以及命名空间化的 JUnit 元素。仅放行根节点的 Surefire `xmlns:xsi` 与 `xsi:noNamespaceSchemaLocation` 元数据，不访问其 URL。JSONL 整批读取。
+
+结果消息最多保留 2,048 UTF-16 单元，截断附 `message_truncated`；忽略 system-out/system-err。Markdown 默认展示前 50 条变化或注记，JSON 保留全部条目，超限报 `output_limit`。`to_json` 预算按默认紧凑 `stringify()` 计量，调用方额外缩进或修改后需管理新的大小。
+
+读取行为参考 junitparser 5.0.3；XML 编辑、写回、任意 xUnit 扩展、自动重跑及 GitHub 网络集成不属于接口范围。基准下载、产物保存和合并权限由现有 CI 管理。

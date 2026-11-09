@@ -1,3 +1,3 @@
 ///|
-// Checked against moon.mod by scripts/version.py during verification.
+// Keep in sync with moon.mod.
 let release_version : String = "0.2.0"

@@ -1,6 +1,0 @@
-<testsuite name="api">
-  <testcase classname="api" name="transport" time="0.1"></testcase>
-  <testcase classname="api" name="transport" time="0.2"><failure message="still broken after retry"/></testcase>
-  <testcase classname="api" name="cache" time="0.1"><failure message="first attempt"/></testcase>
-  <testcase classname="api" name="cache" time="0.1"></testcase>
-</testsuite>
