@@ -1,3 +1,4 @@
+import { readVersion } from './version.mjs';
 // Run after `moon build cmd/junit_delta --target js --release --deny-warn`.
 import { cpSync, copyFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync, existsSync, rmSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -7,8 +8,9 @@ import { spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 
 const root=dirname(dirname(fileURLToPath(import.meta.url)));
+const version=readVersion(root);
 const entry=process.argv[2]??join(root,'_build/js/release/build/cmd/junit_delta/junit_delta.js');
-const output=resolve(root,'_build/release/junit-delta-0.1.0-cli');
+const output=resolve(root,`_build/release/junit-delta-${version}-cli`);
 assert.equal(dirname(output),resolve(root,'_build/release'));
 if(existsSync(output)) rmSync(output,{recursive:true});
 mkdirSync(join(output,'dist'),{recursive:true});
@@ -33,5 +35,5 @@ function walk(dir) {
   }
 }
 walk(output); files.sort((a,b)=>a.path.localeCompare(b.path,'en'));
-writeFileSync(join(output,'MANIFEST.json'),JSON.stringify({name:'junit-delta',version:'0.1.0',runtime:'Node.js 24',files},null,2)+'\n');
+writeFileSync(join(output,'MANIFEST.json'),JSON.stringify({name:'junit-delta',version,runtime:'Node.js 24',files},null,2)+'\n');
 console.log(`Portable CLI verified: ${output} (${files.length} files)`);

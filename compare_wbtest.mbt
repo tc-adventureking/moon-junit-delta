@@ -241,7 +241,10 @@ test "CLI returns precise status and rejects ambiguous options" {
     assert_eq(run_cli(args + extra, read).status, 2)
   }
   assert_eq(run_cli(["--help"], read).status, 0)
-  assert_eq(run_cli(["--version"], read).stdout, "junit-delta 0.1.0\n")
+  assert_eq(
+    run_cli(["--version"], read).stdout,
+    "junit-delta \{release_version}\n",
+  )
   assert_eq(
     run_cli(["compare", "--baseline", "-", "--candidate", "-"], read).status,
     2,

@@ -20,17 +20,18 @@ pub(all) enum DuplicatePolicy {
 #derive(Eq)
 pub(all) enum TestId {
   Class(String, String)
-  SuitePath(Array[String], String)
+  SuitePath(ReadOnlyArray[String], String)
 }
 
 ///|
-#derive(Eq)
 pub struct TestCase {
+  priv scope : Int32
+  priv source_units : Int64
   id : TestId
   name : String
   classname : String?
-  final_results : Array[String]
-  interim_results : Array[String]
+  final_results : ReadOnlyArray[String]
+  interim_results : ReadOnlyArray[String]
   suite_order : Int32
   document_order : Int32
   outcome : Outcome
@@ -50,10 +51,10 @@ pub struct Diagnostic {
 }
 
 ///|
-#derive(Eq)
 pub struct Report {
-  cases : Array[TestCase]
-  diagnostics : Array[Diagnostic]
+  cases : ReadOnlyArray[TestCase]
+  diagnostics : ReadOnlyArray[Diagnostic]
+  priv scopes : ReadOnlyArray[Scope]
 }
 
 ///|
@@ -139,7 +140,7 @@ pub fn parse_duration(value : String) -> Int64? raise InputError {
 
 ///|
 fn diagnostic(source : String, code : String, message : String) -> Diagnostic {
-  { source, code, message, }
+  { source: clipped(source, 512), code, message: clipped(message, 2048), }
 }
 
 ///|
@@ -148,33 +149,54 @@ pub fn merge_reports(
   reports : Array[Report],
   duplicates~ : DuplicatePolicy = Reject,
 ) -> Report raise InputError {
+  if reports.length() > 50 {
+    raise Rejected(
+      "limit_exceeded", "a run cannot contain more than 50 reports",
+    )
+  }
+  let pool = new_scope_pool()
   let cases : Array[TestCase] = []
-  let index : Map[String, Int32] = Map([])
+  let index : Map[(Int32, String), Int32] = Map([])
   let diagnostics : Array[Diagnostic] = []
   for report in reports {
-    diagnostics.append(report.diagnostics)
-    for current in report.cases {
-      let key = current.id.key()
+    let mapping = pool.remap(report.scopes)
+    for diagnostic in report.diagnostics {
+      diagnostics.push(diagnostic)
+    }
+    let ordered = report.cases.iter().to_array()
+    ordered.sort_by((a, b) => a.document_order.compare(b.document_order))
+    for original in ordered {
+      let current = { ..original, scope: mapping[original.scope], }
+      let key = (current.scope, current.name)
       match index.get(key) {
         None => {
+          if cases.length() >= 100000 {
+            raise Rejected(
+              "limit_exceeded", "a merged run exceeds 100000 unique testcases",
+            )
+          }
           index[key] = cases.length()
           cases.push(current)
         }
         Some(i) => {
           let old = cases[i]
           if duplicates == Reject {
-            raise InvalidInput(
-              "duplicate test ID \{key} in \{old.source} and \{current.source}",
+            raise Rejected(
+              "duplicate_test_id",
+              "duplicate test ID \{current.id.preview()} at document index \{current.document_order}",
             )
           }
           if old.attempts > 1000000 - current.attempts {
-            raise InvalidInput("too many attempts for \{key}")
+            raise Rejected(
+              "limit_exceeded",
+              "too many attempts for \{current.id.preview()}",
+            )
           }
           if old.outcome != current.outcome &&
             (old.outcome == Skipped || current.outcome == Skipped) {
             raise Rejected(
               "retry_conflict",
-              "\{key}: skipped attempt mixed with another outcome (\{old.source}, \{current.source})",
+              "\{current.id.preview()}: skipped attempt mixed with another outcome at document index \{current.document_order}",
             )
           }
           cases[i] = {
@@ -188,14 +210,21 @@ pub fn merge_reports(
             diagnostic(
               current.source,
               "duplicate_attempt",
-              "\{key}: final attempt wins; previous source \{old.source}",
+              "\{current.id.preview()}: final attempt wins; document index \{current.document_order}",
             ),
           )
         }
       }
     }
   }
-  { cases, diagnostics, }
+  for i = 0; i < cases.length(); i = i + 1 {
+    cases[i] = { ..cases[i], document_order: i, }
+  }
+  {
+    cases: ReadOnlyArray::from_array(cases),
+    diagnostics: ReadOnlyArray::from_array(diagnostics),
+    scopes: ReadOnlyArray::from_array(pool.scopes),
+  }
 }
 
 ///|
@@ -260,4 +289,26 @@ pub fn TestCase::is_flaky(self : TestCase) -> Bool {
 ///|
 pub fn TestCase::is_rerun(self : TestCase) -> Bool {
   self.interim_results.any(x => x == "rerunFailure" || x == "rerunError")
+}
+
+///|
+pub impl Eq for TestCase with fn equal(a, b) {
+  a.id == b.id &&
+  a.name == b.name &&
+  a.classname == b.classname &&
+  a.final_results == b.final_results &&
+  a.interim_results == b.interim_results &&
+  a.suite_order == b.suite_order &&
+  a.document_order == b.document_order &&
+  a.outcome == b.outcome &&
+  a.attempts == b.attempts &&
+  a.flaky == b.flaky &&
+  a.time_us == b.time_us &&
+  a.message == b.message &&
+  a.source == b.source
+}
+
+///|
+pub impl Eq for Report with fn equal(a, b) {
+  a.cases == b.cases && a.diagnostics == b.diagnostics
 }

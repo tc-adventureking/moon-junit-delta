@@ -2,14 +2,14 @@
 
 ## 输入与身份
 
-支持根 `testsuite` 或 `testsuites`；`testsuite` 可以嵌套，`testcase` 必须是套件的直接子元素。套件属性中的汇总 tests/failures/errors/time 不参与结果判断，实际 testcase 才是数据来源。
+支持根 `testsuite` 或 `testsuites`；`testsuite` 可以嵌套，`testcase` 可以直接位于 `testsuite` 或根 `testsuites` 中，后者兼容 Node 的平铺 JUnit 报告。套件属性中的汇总 tests/failures/errors/time 不参与结果判断，实际 testcase 才是数据来源。
 
 `TestId` 使用带类型标签的 JSON 数组序列化：
 
 - 有 classname：`["class", classname, name]`。
 - 缺少 classname：`["suite", [完整套件路径], name]`。未命名套件使用空字符串作为路径分量。
 
-XML 属性正规化后不再 trim、折叠空白或 Unicode 正规化。file、line、timestamp 不参与身份；同类中同名测试应由生产者提供参数化名称。两个无名、同路径套件中的同名用例会触发重复，不能通过文件顺序补造身份。
+XML 属性正规化后不再 trim、折叠空白或 Unicode 正规化。file、line、timestamp 不参与身份；同类中同名测试应由生产者提供参数化名称。两个无名、同路径套件中的同名用例会触发重复，不能通过文件顺序补造身份。根 `testsuites` 直接包含的用例若缺少 classname，套件路径为 `[]`；原始遍历中这些用例先于子套件。
 
 `parse_document` 保留全部记录，按 junitparser 的套件遍历顺序返回；每条记录另存 `document_order`。`parse_report` 按原文顺序归并，`merge_reports` 按参数中报告顺序归并。重复默认报错；`Attempts` 取最后记录的 outcome、time、message、source，累加 attempts。只有曾混合通过与失败/错误，或任一记录带 flaky 标记，才标注 flaky；error 与 failure 的切换不算 flaky。skipped 与其他状态混合归并拒绝为 `retry_conflict`，避免后续跳过掩盖失败；重复 skipped 可以归并。套件缺少 name 与显式空 name 均使用空字符串路径分量。
 
@@ -26,7 +26,9 @@ XML 属性正规化后不再 trim、折叠空白或 Unicode 正规化。file、l
 | failure/error + flaky（可兼有 rerun） | failed/errored | 1 + 临时结果数 | true，并给诊断 |
 | skipped + retry；无 failure/error 的 rerun | 输入错误 | — | — |
 
-只读取结果元素的 message 和文本，最多 2,048 UTF-16 代码单元；截断不会切开代理对。system-out/system-err 不进入消息；输出 Markdown 将控制语法与 HTML 转义。未知元素每个不同名称产生一条诊断；嵌在未知元素中的已知结果拒绝。
+只读取结果元素的 message 和文本，属性与正文用换行分隔，最多 2,048 UTF-16 代码单元；截断不会切开代理对，并产生 `message_truncated` 诊断。system-out/system-err 不进入消息；输出 Markdown 将控制语法与 HTML 转义。未知元素每个不同名称产生一条诊断；嵌在未知元素中的已知结果拒绝。逐用例诊断含原文索引及有界身份预览；诊断来源最多 512 单元、消息最多 2,048 单元，超长部分显示省略号。用例中的身份和来源仍完整保留。
+
+公开结果集合使用 `ReadOnlyArray`，复制为可变数组不会修改报告。归并后的 `document_order` 按首次出现的身份重新编号，便于再次归并；原始 XML 顺序可从 `parse_document` 获取。归并后 `is_flaky` / `is_rerun` 描述最后一条原始记录，`flaky` / `attempts` 描述累计重试，二者用途不同。
 
 ## 分类矩阵
 
@@ -58,10 +60,12 @@ current * 100 > median * (100 + slowdown_pct)
 
 默认 `new_failure,added_failing,removed,empty_report`。可选 `still_failing,newly_skipped,flaky,slowdown`；空门禁集合只报告。`flaky` 检查当前显式或归并出的 flaky，不是历史 `known_flaky`。
 
-JSON `schema_version=1`，完整 entries 按 `(category, ID JSON)` 字典序排列，counts 只包含出现的类别，violations 去重排序。诊断保持输入顺序。Markdown 默认展示前 50 条有变化或注记的记录，JSON 不截断用例条目。退出码 0=通过，1=门禁命中，2=输入/用法错误；JSONL 对每行输出结果并以最大退出码结束。
+JSON `schema_version=1`，完整 entries 按 `(category, ID JSON)` 字典序排列，counts 只包含出现的类别，violations 去重排序。诊断保持输入顺序。Markdown 默认展示前 50 条有变化或注记的记录，包含历史波动注记；JSON 不截断用例条目。退出码 0=通过，1=门禁命中，2=输入/用法错误；JSONL 忽略空白行（空输入返回 0），其余每行输出结果并以最大退出码结束。
 
 ## 资源边界
 
-每份 XML 最多 10,000,000 UTF-16 代码单元、深度 128、2,000,000 次读取事件、100,000 条 testcase。比较每个运行归并后不超过 100,000 个 ID；最多 50 个历史运行、每运行最多 50 个分片。CLI 单次输入文件/标准输入最多 20,000,000 字节，compare 合计 XML 最多 20,000,000 代码单元；JSONL 整批读取，有同样的 20,000,000 代码单元上限，不是无限流式协议。
+每份 XML 最多 10,000,000 UTF-16 代码单元、深度 128、2,000,000 次读取事件（含 EOF）、100,000 条 testcase；每个元素最多 1,024 个属性，通过线性预检限制 XML 依赖的属性查重开销。比较每个运行归并后不超过 100,000 个 ID；最多 50 个历史运行、每运行最多 50 个分片。CLI 单次输入文件/标准输入最多 20,000,000 字节，compare 合计 XML 最多 20,000,000 代码单元；JSONL 整批读取，有同样的 20,000,000 代码单元上限，不是无限流式协议。
+
+渲染上限为 100,000,000 UTF-16 单元，在展开重复身份及来源前计量；公共渲染方法可用 `max_units` 调低，超限抛出 `InputError::Rejected("output_limit", ...)`。比较本身不受输出上限影响，可用 Markdown `limit=0` 查看概要。JSONL 整批输出同样有界；达到上限时保留此前完整结果，追加带原始行号的 `output_limit` 错误并停止处理后续行。JSONL 协议包装预留少量空间，因此可能在整批上限前结束。
 
 重复归并后单个 ID 的 attempts 不超过 1,000,000。XML、JSON 重复属性/键拒绝；DTD、命名空间化的 JUnit 元素和非 UTF-8 声明不受支持。根节点可携带 Surefire 的 `xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"` 和 `xsi:noNamespaceSchemaLocation`，二者只作元数据，schema URL 从不读取；其他命名空间属性拒绝。CLI 不执行报告中的代码，不读取实体地址，也不访问网络。

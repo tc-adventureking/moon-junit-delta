@@ -151,7 +151,7 @@ pub fn evaluate_request(text : String) -> Json {
       None => raise InvalidInput("missing candidate")
     }
     let fail_on = match field(request, "fail_on") {
-      None => default_config().fail_on
+      None => default_config().fail_on.iter().to_array()
       Some(Array(items)) =>
         items.map(item => {
           match item {
@@ -180,22 +180,22 @@ pub fn evaluate_request(text : String) -> Json {
         "ok": false,
         "exit_code": 2,
         "error_code": "unknown_field",
-        "error_path": Json(path),
-        "error": Json("unknown field at \{path}"),
+        "error_path": Json(clipped(path, 2048)),
+        "error": Json("unknown field at " + clipped(path, 2048)),
       }
     Rejected(code, message) =>
       {
         "ok": false,
         "exit_code": 2,
         "error_code": Json(code),
-        "error": Json(message),
+        "error": Json(clipped(message, 2048)),
       }
     error =>
       {
         "ok": false,
         "exit_code": 2,
         "error_code": "invalid_request",
-        "error": Json(error.to_string()),
+        "error": Json(clipped(error.to_string(), 2048)),
       }
   }
 }

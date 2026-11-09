@@ -1,3 +1,4 @@
+import { readVersion } from './version.mjs';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync, mkdtempSync, rmSync, existsSync } from 'node:fs';
@@ -34,7 +35,7 @@ assert.equal(hist.entries.find(e=>e.category==='new_failure').known_flaky, true)
 assert.equal(hist.gate.exit_code, 1);
 assert.equal(hist.entries.find(e=>e.slowdown).baseline_time_us, 400000);
 assert.equal(run(['--help']).status, 0);
-assert.equal(run(['--version']).stdout, 'junit-delta 0.1.0\n');
+assert.equal(run(['--version']).stdout, `junit-delta ${readVersion(root)}\n`);
 const missing=run(['compare','--baseline','missing-does-not-exist.xml','--candidate','examples/candidate.xml']);
 assert.equal(missing.status,2); assert.equal(missing.stdout,'');
 for (const extra of [['--format','wrong'],['--duplicates','wrong'],['--fail-on','typo'],['--slowdown-pct','1000001'],['--limit','oops']]) {

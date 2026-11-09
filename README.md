@@ -16,7 +16,7 @@
 在 MoonBit 项目目录中安装：
 
 ```bash
-moon add tc-adventureking/junit_delta@0.1.0
+moon add tc-adventureking/junit_delta@0.2.0
 ```
 
 在 `moon.pkg` 中导入：
@@ -43,7 +43,7 @@ test "new failure" {
 
 有 classname 时以 `(classname, name)` 作为身份，否则使用完整套件路径。调用方需处理 `InputError`；仅显式指定 `Attempts` 时才将重复记录解释为重试。
 
-[完整 API](pkg.generated.mbti) · [junitparser 对照与差异](docs/COMPATIBILITY.md) · [使用场景](https://github.com/tc-adventureking/moon-junit-delta/blob/main/examples/scenarios/README.md)
+[完整 API](pkg.generated.mbti) · [0.2 迁移](docs/MIGRATION.md) · [junitparser 对照与差异](docs/COMPATIBILITY.md) · [使用场景](https://github.com/tc-adventureking/moon-junit-delta/blob/main/examples/scenarios/README.md)
 
 ## 示例与测试
 
@@ -58,7 +58,7 @@ bash scripts/verify-package.sh
 
 ## JUnit 报告 CLI
 
-CLI 位于 [GitHub 源码仓库](https://github.com/tc-adventureking/moon-junit-delta)。在仓库内读取基准与当前 XML，支持多份历史、当前分片和标准输入 `-`：
+[Release](https://github.com/tc-adventureking/moon-junit-delta/releases/tag/v0.2.0) 提供源码包、MoonBit 模块包和只需 Node.js 24 的便携 CLI，附 SHA-256 校验。在仓库内读取基准与当前 XML，支持多份历史、当前分片和标准输入 `-`：
 
 ```bash
 node bin/junit-delta.mjs compare --baseline examples/baseline.xml --candidate examples/candidate.xml

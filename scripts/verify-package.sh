@@ -34,4 +34,17 @@ printf '%s\n' 'members = ["library", "consumer"]' > "$scratch/moon.work"
 export MOON_WORK="$scratch/moon.work"
 moon -C "$scratch/consumer" test . --target all --deny-warn
 moon -C "$scratch/consumer" run . --target wasm-gc --frozen
+cat > "$scratch/consumer/immutable.mbt" <<'MOON'
+test "external mutation must not compile" {
+  let report = @delta.parse_report("<testsuite><testcase name='x'/></testsuite>")
+  report.cases[0].final_results.push("failure")
+}
+MOON
+if moon -C "$scratch/consumer" check --target all > "$scratch/immutable.log" 2>&1; then
+  printf '%s\n' 'Public result array unexpectedly permits mutation' >&2
+  exit 1
+fi
+# Require the intended compiler rejection, not an unrelated missing dependency.
+grep -q 'ReadOnlyArray' "$scratch/immutable.log"
+grep -q 'push' "$scratch/immutable.log"
 printf '%s\n' 'Fresh source ZIP and independent consumer passed on four targets.'

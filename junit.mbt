@@ -1,5 +1,6 @@
 ///|
 priv struct CaseBuilder {
+  scope : Int32
   id : TestId
   name : String
   classname : String?
@@ -22,6 +23,7 @@ fn CaseBuilder::finish(
   source : String,
   diagnostics : Array[Diagnostic],
   document_order : Int32,
+  source_units : Int64,
 ) -> TestCase raise InputError {
   let retries = self.flaky_count + self.rerun_count
   if self.skipped > 0 && retries > 0 {
@@ -40,14 +42,18 @@ fn CaseBuilder::finish(
   if outer_failure && self.flaky_count > 0 {
     diagnostics.push(
       diagnostic(
-        source, "contradictory_retry", "outcome is failure/error; flaky markers retained",
+        source,
+        "contradictory_retry",
+        "document index \{document_order}: \{self.id.preview()}; outcome is failure/error; flaky markers retained",
       ),
     )
   }
   if self.failed + self.errored + self.skipped > 1 {
     diagnostics.push(
       diagnostic(
-        source, "multiple_outcomes", "precedence is error > failure > skipped > passed",
+        source,
+        "multiple_outcomes",
+        "document index \{document_order}: \{self.id.preview()}; precedence is error > failure > skipped > passed",
       ),
     )
   }
@@ -60,12 +66,22 @@ fn CaseBuilder::finish(
   } else {
     Passed
   }
+  if self.message_truncated {
+    diagnostics.push(
+      diagnostic(
+        source,
+        "message_truncated",
+        "document index \{document_order}: \{self.id.preview()}; message clipped at 2048 UTF-16 units",
+      ),
+    )
+  }
   {
     id: self.id,
+    scope: self.scope,
     name: self.name,
     classname: self.classname,
-    final_results: self.final_results,
-    interim_results: self.interim_results,
+    final_results: ReadOnlyArray::from_array(self.final_results),
+    interim_results: ReadOnlyArray::from_array(self.interim_results),
     suite_order: self.suite_order,
     document_order,
     outcome,
@@ -74,6 +90,7 @@ fn CaseBuilder::finish(
     time_us: self.time_us,
     message: self.message,
     source,
+    source_units,
   }
 }
 
@@ -100,9 +117,12 @@ pub fn parse_document(
       "\{source}: XML exceeds 10000000 UTF-16 code units",
     )
   }
+  check_xml_attribute_budget(text)
+  let source_units = string_json_units(source)
   let reader = @xml.Reader::from_string(text)
   let tags : Array[String] = []
-  let suites : Array[String] = []
+  let pool = new_scope_pool()
+  let suite_tokens : Array[Int32] = []
   let suite_orders : Array[Int32] = []
   let mut next_suite = 0
   let cases : Array[TestCase] = []
@@ -111,6 +131,7 @@ pub fn parse_document(
   let mut current : CaseBuilder? = None
   let mut case_depth = 0
   let mut message_depth = 0
+  let mut message_body_started = false
   let mut root_seen = false
   let mut events = 0
   while true {
@@ -144,6 +165,11 @@ pub fn parse_document(
             )
           }
           root_seen = true
+          // Node's JUnit reporter can place cases directly under testsuites.
+          // Reserve order zero for these cases before any nested suites.
+          if tag == "testsuites" {
+            next_suite = 1
+          }
         }
         let root_xsi = depth == 1 &&
           element.get("xmlns:xsi") ==
@@ -178,7 +204,10 @@ pub fn parse_document(
               "\{source}: suite inside testcase",
             )
           }
-          suites.push(element.get("name").unwrap_or(""))
+          let parent_scope = suite_tokens.last().unwrap_or(0)
+          suite_tokens.push(
+            pool.intern(parent_scope, element.get("name").unwrap_or("")),
+          )
           suite_orders.push(next_suite)
           next_suite = next_suite + 1
         } else if tag == "testsuites" {
@@ -189,10 +218,11 @@ pub fn parse_document(
             )
           }
         } else if tag == "testcase" {
-          if parent != "testsuite" || current is Some(_) {
+          let root_case = parent == "testsuites" && depth == 2
+          if (parent != "testsuite" && !root_case) || current is Some(_) {
             raise Rejected(
               "invalid_structure",
-              "\{source}: testcase must be directly inside testsuite",
+              "\{source}: testcase must be directly inside testsuite or root testsuites",
             )
           }
           let name = element.get("name").unwrap_or("")
@@ -202,15 +232,20 @@ pub fn parse_document(
               "\{source}: testcase requires a nonempty name",
             )
           }
+          let scope = match element.get("classname") {
+            Some(classname) => pool.intern(-1, classname)
+            None => suite_tokens.last().unwrap_or(0)
+          }
           let id = match element.get("classname") {
             Some(classname) => Class(classname, name)
-            None => SuitePath(suites.copy(), name)
+            None => SuitePath(pool.scopes[scope].path, name)
           }
           let time_us = parse_duration(element.get("time").unwrap_or("")) catch {
             error => raise Rejected("invalid_time", "\{source}: \{error}")
           }
           current = Some({
             id,
+            scope,
             name,
             classname: element.get("classname"),
             final_results: [],
@@ -258,6 +293,7 @@ pub fn parse_document(
           append_message(builder, element.get("message").unwrap_or(""))
           if !empty {
             message_depth = depth
+            message_body_started = false
           }
         } else if tag != "properties" &&
           tag != "property" &&
@@ -276,11 +312,13 @@ pub fn parse_document(
             guard current is Some(builder) else {
               raise InvalidInput("missing testcase state")
             }
-            cases.push(builder.finish(source, diagnostics, cases.length()))
+            cases.push(
+              builder.finish(source, diagnostics, cases.length(), source_units),
+            )
             current = None
           }
           if tag == "testsuite" {
-            ignore(suites.pop())
+            ignore(suite_tokens.pop())
             ignore(suite_orders.pop())
           }
         } else {
@@ -294,11 +332,16 @@ pub fn parse_document(
         }
       }
       End(tag) => {
+        if tags.last() != Some(tag) {
+          raise Rejected("malformed_xml", "mismatched XML closing element")
+        }
         if tag == "testcase" {
           guard current is Some(builder) else {
             raise InvalidInput("\{source}: unmatched testcase")
           }
-          cases.push(builder.finish(source, diagnostics, cases.length()))
+          cases.push(
+            builder.finish(source, diagnostics, cases.length(), source_units),
+          )
           current = None
           if cases.length() > 100000 {
             raise Rejected(
@@ -308,7 +351,7 @@ pub fn parse_document(
           }
         }
         if tag == "testsuite" {
-          ignore(suites.pop())
+          ignore(suite_tokens.pop())
           ignore(suite_orders.pop())
         }
         if tags.length() == message_depth {
@@ -321,6 +364,12 @@ pub fn parse_document(
           !tags.contains("system-out") &&
           !tags.contains("system-err") {
           if current is Some(builder) {
+            if !message_body_started && value != "" {
+              if builder.message != "" {
+                append_message(builder, "\n")
+              }
+              message_body_started = true
+            }
             append_message(builder, value)
           }
         }
@@ -333,7 +382,12 @@ pub fn parse_document(
             "\{source}: only UTF-8 XML is supported",
           )
         }
-      Eof => break
+      Eof => {
+        if !tags.is_empty() || current is Some(_) {
+          raise Rejected("malformed_xml", "truncated XML document")
+        }
+        break
+      }
       _ => ()
     }
   }
@@ -349,7 +403,11 @@ pub fn parse_document(
       a.document_order.compare(b.document_order)
     }
   })
-  { cases, diagnostics, }
+  {
+    cases: ReadOnlyArray::from_array(cases),
+    diagnostics: ReadOnlyArray::from_array(diagnostics),
+    scopes: ReadOnlyArray::from_array(pool.scopes),
+  }
 }
 
 ///|
@@ -360,6 +418,5 @@ pub fn parse_report(
   duplicates~ : DuplicatePolicy = Reject,
 ) -> Report raise InputError {
   let document = parse_document(text, source~)
-  document.cases.sort_by((a, b) => a.document_order.compare(b.document_order))
   merge_reports([document], duplicates~)
 }

@@ -15,7 +15,7 @@ test "XML reuse probe declaration BOM entities CDATA comments Chinese" {
   assert_eq(r.cases.length(), 2)
   assert_eq(r.cases[0].id.key(), "[\"class\",\"\",\"<A&\"]")
   assert_eq(r.cases[0].time_us, Some(123456L))
-  assert_eq(r.cases[0].message, "badx < y")
+  assert_eq(r.cases[0].message, "bad\nx < y")
   assert_eq(r.cases[1].id.key(), "[\"suite\",[\"中文\"],\"好\"]")
 }
 
@@ -194,7 +194,7 @@ test "malformed inputs are errors not empty passing reports" {
       "", " ", "<testsuite>", "<testsuite><testcase name='a'></testsuite>", "<root/>",
       "<testsuite/><testsuite/>", "<testsuite><testcase/></testsuite>", "<testsuite><testcase name=''/></testsuite>",
       "<testsuite><testcase name='&bad;'/></testsuite>", "<testsuite><testcase name='a' name='b'/></testsuite>",
-      "<testsuites><testcase name='a'/></testsuites>", "<testsuite><x><testcase name='a'/></x></testsuite>",
+      "<testsuites><x><testcase name='a'/></x></testsuites>", "<testsuite><x><testcase name='a'/></x></testsuite>",
       "<!DOCTYPE testsuite><testsuite/>", "<?xml version='1.0' encoding='ISO-8859-1'?><testsuite/>",
       "<testsuite xmlns='urn:x'/>",
     ] {
@@ -230,7 +230,7 @@ test "unknown elements warn and output logs are not failure messages" {
     "<testsuite><extra/><extra/><testcase name='x'><flakyFailure message='bad'><stackTrace>trace</stackTrace><system-out><stackTrace>SECRET_LOG</stackTrace></system-out></flakyFailure><system-out>ignored</system-out></testcase></testsuite>",
   )
   assert_eq(r.diagnostics.length(), 1)
-  assert_eq(r.cases[0].message, "badtrace")
+  assert_eq(r.cases[0].message, "bad\ntrace")
 }
 
 ///|
@@ -243,6 +243,73 @@ test "depth and message budgets" {
     "</failure></testcase></testsuite>",
   )
   assert_eq(r.cases[0].message.length(), 2048)
+}
+
+///|
+test "Node flat JUnit cases and nested suites are both retained" {
+  let xml = "<testsuites><testsuite name='nested'><testcase name='child'/></testsuite><testcase name='root'/><testcase classname='test' name='参数😀'><failure/></testcase></testsuites>"
+  let raw = parse_document(xml)
+  assert_eq(raw.cases.length(), 3)
+  assert_eq(raw.cases.map(c => c.name), ["root", "参数😀", "child"])
+  assert_eq(raw.cases.map(c => c.document_order), [1, 2, 0])
+  assert_true(raw.cases[0].id == SuitePath([], "root"))
+  assert_true(raw.cases[1].id == Class("test", "参数😀"))
+  assert_true(raw.cases[2].id == SuitePath(["nested"], "child"))
+  let report = parse_report(xml)
+  assert_eq(report.cases.map(c => c.name), ["child", "root", "参数😀"])
+  assert_true(report.cases[2].outcome == Failed)
+  assert_true(
+    rejects(
+      "<testsuites><testsuites><testcase name='x'/></testsuites></testsuites>",
+    ),
+  )
+}
+
+///|
+test "public merge enforces document and unique case budgets" {
+  let empty = parse_report("<testsuite/>")
+  let documents : Array[Report] = []
+  for i = 0; i < 50; i = i + 1 {
+    documents.push(empty)
+  }
+  assert_eq(merge_reports(documents).cases.length(), 0)
+  documents.push(empty)
+  assert_true(
+    try {
+      ignore(merge_reports(documents))
+      false
+    } catch {
+      Rejected("limit_exceeded", _) => true
+      _ => false
+    },
+  )
+  let template_report = parse_report(
+    "<testsuite><testcase classname='budget' name='0'/></testsuite>",
+  )
+  let template = template_report.cases[0]
+  let cases : Array[TestCase] = []
+  for i = 0; i < 100000; i = i + 1 {
+    let name = i.to_string()
+    cases.push({ ..template, id: Class("budget", name), name, })
+  }
+  let full : Report = {
+    cases: ReadOnlyArray::from_array(cases),
+    diagnostics: [],
+    scopes: template_report.scopes,
+  }
+  assert_eq(merge_reports([full]).cases.length(), 100000)
+  let extra = parse_report(
+    "<testsuite><testcase classname='budget' name='100000'/></testsuite>",
+  )
+  assert_true(
+    try {
+      ignore(merge_reports([full, extra]))
+      false
+    } catch {
+      Rejected("limit_exceeded", _) => true
+      _ => false
+    },
+  )
 }
 
 ///|

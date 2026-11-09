@@ -7,11 +7,16 @@
 !/LICENSE
 !/CHANGELOG.md
 !/cli.mbt
+!/budget.mbt
+!/identity.mbt
+!/xml_budget.mbt
+!/hardening_wbtest.mbt
 !/compare.mbt
 !/compare_wbtest.mbt
 !/fixtures_wbtest.mbt
 !/junit.mbt
 !/model.mbt
+!/version.mbt
 !/parser_wbtest.mbt
 !/render.mbt
 !/request.mbt
@@ -21,6 +26,7 @@
 /docs/*
 !/docs/USAGE.md
 !/docs/SPEC.md
+!/docs/MIGRATION.md
 !/docs/COMPATIBILITY.md
 !/docs/PROVENANCE.md
 !/schemas/

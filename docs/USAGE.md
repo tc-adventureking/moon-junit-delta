@@ -60,7 +60,7 @@ JSON 协议的绝对阈值使用微秒；CLI 使用毫秒。比较请求 `op` �
 {"op":"parse","document":{"xml":"<testsuite><testcase name='x'/></testsuite>","source":"report.xml"}}
 ```
 
-成功响应含 `ok:true,exit_code,report`；失败响应含 `ok:false,exit_code:2,error_code,error`。每行独立处理，某一行失败不会吞掉其他行的结果；进程退出码为所有行最大值。空白行忽略。
+成功响应含 `ok:true,exit_code,report`；失败响应含 `ok:false,exit_code:2,error_code,error`。每行独立处理，通常某一行失败不影响其他行；进程退出码为所有行最大值。空白行忽略，空输入返回 0。整批输出达到 100,000,000 UTF-16 单元上限时，会保留此前完整结果、追加带原始行号的 `output_limit` 错误并停止处理，详见 [资源边界](SPEC.md#资源边界)。
 
 请求根对象和每个 document 都拒绝未知字段。拼错 `fail_on` 不会静默使用默认策略：响应为 `error_code:"unknown_field"`、退出码 2，并提供括号式 JSON 路径，例如 `$["baselines"][0]["sorce"]`。不同操作只接受各自的字段，`op:"parse"` 不接受比较门禁选项。
 

@@ -22,6 +22,8 @@
 
 这些方法描述原始 XML 标记。`TestCase.flaky` 还可能在显式重复项归并后为真，它与原始 `is_flaky()` 的含义不同。
 
+额外支持 Node 报告器将 `testcase` 直接放在根 `testsuites` 下的平铺布局。这是实际生产端验证的扩展，不宣称其遍历行为与 junitparser 等价；普通套件布局仍执行上述逐字段对标。
+
 ## 验证范围
 
 固定随机种子 `20261109`，1,079 份输入：1,053 份支持范围内结果一致，26 份由本项目明确拒绝，零未解释差异。输入包含 35 组状态组合、重复及嵌套套件、Unicode/空白/XML 实体、七份夹具、1,000 份生成报告和拒绝边界。
@@ -52,4 +54,4 @@
 
 [junit-xml-diff](https://github.com/insightsengineering/junit-xml-diff) 主要侧重耗时/计数，未采用其身份与重复聚合逻辑；[publish-unit-test-result-action](https://github.com/EnricoMi/publish-unit-test-result-action) 提供实际夹具与结果报告场景参考，但 GitHub 网络集成不是本项目范围。
 
-不实现 XML 编辑或写回、任意 xUnit 扩展、跨平台自动重命名匹配、自动重跑、JUnit5 测试执行器或统计显著性分析。不同生产者应先用真实输出验证；已有 Node 实际输出，以及固定来源的上游 pytest、Apache Surefire 夹具；另有注明来源的作者构造样例。未在本机执行 Maven 或 GitLab。
+不实现 XML 编辑或写回、任意 xUnit 扩展、跨平台自动重命名匹配、自动重跑、JUnit5 测试执行器或统计显著性分析。已真实执行 pytest 8.4.2 / 9.2.0（xunit1、xunit2、参数化及分片）、Maven Surefire 3.5.4 / 3.6.1（JUnit 5.11.4 / 6.1.3、失败重跑及 flaky 成功）和 Node.js 24 的报告生成与端到端检查。公共 CI 持续运行两组生产端配置；原始机器报告只保留在忽略的构建目录中。GitLab 使用注明来源的作者构造样例，没有声称执行 GitLab 服务。

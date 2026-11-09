@@ -58,7 +58,11 @@ pub fn run_cli(
       return { stdout: usage(), stderr: "", status: 0, }
     }
     if args == ["--version"] {
-      return { stdout: "junit-delta 0.1.0\n", stderr: "", status: 0, }
+      return {
+        stdout: "junit-delta \{release_version}\n",
+        stderr: "",
+        status: 0,
+      }
     }
     if args == ["jsonl"] {
       let input = read("-")
@@ -67,7 +71,10 @@ pub fn run_cli(
       }
       let out = StringBuilder()
       let mut status = 0
+      let mut output_units = 0
+      let mut line_number = 0
       for line in input.split("\n") {
+        line_number = line_number + 1
         if line.trim().is_empty() {
           continue
         }
@@ -76,7 +83,24 @@ pub fn run_cli(
         if code > status {
           status = code
         }
-        out.write_string(result.stringify() + "\n")
+        let rendered = result.stringify() + "\n"
+        if rendered.length() > 100000000 - output_units - 512 {
+          out.write_string(
+            (
+              {
+                "ok": false,
+                "exit_code": 2,
+                "error_code": "output_limit",
+                "error": "JSONL output limit exceeded; remaining lines were not processed",
+                "line": Json(line_number),
+              } : Json).stringify() +
+            "\n",
+          )
+          status = 2
+          break
+        }
+        output_units = output_units + rendered.length()
+        out.write_string(rendered)
       }
       return { stdout: out.to_string(), stderr: "", status, }
     }
@@ -88,7 +112,7 @@ pub fn run_cli(
     let seen : Map[String, Bool] = Map([])
     let mut format = "text"
     let mut duplicates = Reject
-    let mut fail_on = default_config().fail_on
+    let mut fail_on = default_config().fail_on.iter().to_array()
     let mut pct = 50
     let mut floor_us = 200000L
     let mut limit = 50
@@ -163,6 +187,13 @@ pub fn run_cli(
     }
     { stdout, stderr: "", status: result.exit_code(), }
   } catch {
-    error => { stdout: "", stderr: "junit-delta: \{error}\n", status: 2, }
+    error =>
+      {
+        stdout: "",
+        stderr: "junit-delta: " +
+        terminal_text(clipped(error.to_string(), 2048)) +
+        "\n",
+        status: 2,
+      }
   }
 }

@@ -2,11 +2,13 @@
 pub struct DiffConfig {
   slowdown_pct : Int32
   slowdown_floor_us : Int64
-  fail_on : Array[String]
+  fail_on : ReadOnlyArray[String]
 }
 
 ///|
 pub struct DiffEntry {
+  priv scope : Int32
+  priv encoded_name : String
   id : TestId
   category : String
   before : TestCase?
@@ -18,9 +20,10 @@ pub struct DiffEntry {
 
 ///|
 pub struct DiffResult {
-  entries : Array[DiffEntry]
-  diagnostics : Array[Diagnostic]
-  violations : Array[String]
+  priv scopes : ReadOnlyArray[Scope]
+  entries : ReadOnlyArray[DiffEntry]
+  diagnostics : ReadOnlyArray[Diagnostic]
+  violations : ReadOnlyArray[String]
   baseline_count : Int32
   candidate_count : Int32
   history_count : Int32
@@ -58,7 +61,11 @@ pub fn diff_config(
       raise InvalidInput("unknown gate: \{key}")
     }
   }
-  { slowdown_pct, slowdown_floor_us, fail_on: fail_on.copy(), }
+  {
+    slowdown_pct,
+    slowdown_floor_us,
+    fail_on: ReadOnlyArray::from_array(fail_on),
+  }
 }
 
 ///|
@@ -85,22 +92,37 @@ pub fn classify(before : Outcome?, after : Outcome?) -> String {
 }
 
 ///|
-fn report_index(report : Report) -> Map[String, TestCase] raise InputError {
-  let index : Map[String, TestCase] = Map([])
+fn report_index(
+  report : Report,
+  pool : ScopePool,
+) -> Map[(Int32, String), TestCase] raise InputError {
+  let index : Map[(Int32, String), TestCase] = Map([])
   if report.cases.length() > 100000 {
-    raise InvalidInput("report exceeds 100000 testcases")
+    raise Rejected("limit_exceeded", "report exceeds 100000 testcases")
   }
+  let mapping = pool.remap(report.scopes)
   for item in report.cases {
-    let key = item.id.key()
+    let key = (mapping[item.scope], item.name)
     if index.contains(key) {
-      raise InvalidInput("duplicate test ID in report: \{key}")
+      raise Rejected(
+        "duplicate_test_id",
+        "duplicate test ID in report: \{item.id.preview()}",
+      )
     }
     if item.time_us is Some(t) && (t < 0L || t > 9000000000000L) {
-      raise InvalidInput("time out of supported bounds")
+      raise Rejected("invalid_time", "time out of supported bounds")
     }
     index[key] = item
   }
   index
+}
+
+///|
+priv struct HistoricalStats {
+  times : Array[Int64]
+  mut seen_pass : Bool
+  mut seen_fail : Bool
+  mut known_flaky : Bool
 }
 
 ///|
@@ -116,17 +138,49 @@ pub fn compare(
   let cfg = diff_config(
     slowdown_pct=config.slowdown_pct,
     slowdown_floor_us=config.slowdown_floor_us,
-    fail_on=config.fail_on,
+    fail_on=config.fail_on.iter().to_array(),
   )
-  let indexes = history.map(report_index)
-  let base = indexes[indexes.length() - 1]
-  let head = report_index(candidate)
-  let keys : Map[String, Bool] = Map([])
+  let pool = new_scope_pool()
+  let base = report_index(history[history.length() - 1], pool)
+  let head = report_index(candidate, pool)
+  let keys : Map[(Int32, String), Bool] = Map([])
   for key, _ in base {
     keys[key] = true
   }
   for key, _ in head {
     keys[key] = true
+  }
+  let stats : Map[(Int32, String), HistoricalStats] = Map([])
+  for i = 0; i < history.length(); i = i + 1 {
+    let index = if i == history.length() - 1 {
+      base
+    } else {
+      report_index(history[i], pool)
+    }
+    for key, item in index {
+      if !keys.contains(key) {
+        continue
+      }
+      let stat = match stats.get(key) {
+        Some(stat) => stat
+        None => {
+          let stat : HistoricalStats = {
+            times: [],
+            seen_pass: false,
+            seen_fail: false,
+            known_flaky: false,
+          }
+          stats[key] = stat
+          stat
+        }
+      }
+      stat.seen_pass = stat.seen_pass || item.outcome == Passed
+      stat.seen_fail = stat.seen_fail || is_failure(item.outcome)
+      stat.known_flaky = stat.known_flaky || item.flaky
+      if item.outcome == Passed && item.time_us is Some(time) {
+        stat.times.push(time)
+      }
+    }
   }
   let entries : Array[DiffEntry] = []
   for key, _ in keys {
@@ -140,30 +194,17 @@ pub fn compare(
       before.map(x => x.outcome),
       after.map(x => x.outcome),
     )
-    let times : Array[Int64] = []
-    let mut seen_pass = false
-    let mut seen_fail = false
-    let mut known_flaky = false
-    for idx in indexes {
-      if idx.get(key) is Some(item) {
-        if item.outcome == Passed {
-          seen_pass = true
+    let (baseline_time_us, known_flaky) = match stats.get(key) {
+      None => (None, false)
+      Some(stat) => {
+        stat.times.sort()
+        let median = if stat.times.is_empty() {
+          None
+        } else {
+          Some(stat.times[(stat.times.length() - 1) / 2])
         }
-        if is_failure(item.outcome) {
-          seen_fail = true
-        }
-        known_flaky = known_flaky || item.flaky
-        if item.outcome == Passed && item.time_us is Some(t) {
-          times.push(t)
-        }
+        (median, stat.known_flaky || (stat.seen_pass && stat.seen_fail))
       }
-    }
-    known_flaky = known_flaky || (seen_pass && seen_fail)
-    times.sort()
-    let baseline_time_us = if times.is_empty() {
-      None
-    } else {
-      Some(times[(times.length() - 1) / 2])
     }
     let slowdown = match (before, after, baseline_time_us) {
       (Some(b), Some(c), Some(t)) if b.outcome == Passed && c.outcome == Passed =>
@@ -183,21 +224,32 @@ pub fn compare(
       baseline_time_us,
       slowdown,
       known_flaky,
+      scope: key.0,
+      encoded_name: Json(key.1).stringify(),
     })
   }
+  let ranks = pool.ranks()
   entries.sort_by((a, b) => {
-    let first = a.category.lexical_compare(b.category)
-    if first != 0 {
-      first
+    let category = a.category.lexical_compare(b.category)
+    if category != 0 {
+      return category
+    }
+    let scope = ranks[a.scope].compare(ranks[b.scope])
+    if scope != 0 {
+      scope
     } else {
-      a.id.key().lexical_compare(b.id.key())
+      a.encoded_name.lexical_compare(b.encoded_name)
     }
   })
   let diagnostics : Array[Diagnostic] = []
   for report in history {
-    diagnostics.append(report.diagnostics)
+    for d in report.diagnostics {
+      diagnostics.push(d)
+    }
   }
-  diagnostics.append(candidate.diagnostics)
+  for d in candidate.diagnostics {
+    diagnostics.push(d)
+  }
   let violations : Array[String] = []
   for gate in cfg.fail_on {
     let hit = if gate == "empty_report" {
@@ -217,9 +269,10 @@ pub fn compare(
   }
   violations.sort_by((a, b) => a.lexical_compare(b))
   {
-    entries,
-    diagnostics,
-    violations,
+    scopes: ReadOnlyArray::from_array(pool.scopes),
+    entries: ReadOnlyArray::from_array(entries),
+    diagnostics: ReadOnlyArray::from_array(diagnostics),
+    violations: ReadOnlyArray::from_array(violations),
     baseline_count: base.length(),
     candidate_count: head.length(),
     history_count: history.length(),
