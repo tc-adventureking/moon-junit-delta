@@ -1,0 +1,5 @@
+import {
+  "tc-adventureking/junit_delta" @junit,
+}
+
+pkgtype(kind: "executable")

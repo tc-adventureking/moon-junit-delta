@@ -16,6 +16,8 @@ pub fn diff_config(slowdown_pct? : Int32, slowdown_floor_us? : Int64, fail_on? :
 
 pub fn evaluate_request(String) -> @json.Json
 
+pub fn merge_documents(Array[JUnitDocument]) -> JUnitDocument raise InputError
+
 pub fn merge_reports(Array[Report], duplicates? : DuplicatePolicy) -> Report raise InputError
 
 pub fn parse_document(String, source? : String) -> Report raise InputError
@@ -96,6 +98,49 @@ pub(all) enum DuplicatePolicy {
 }
 pub fn DuplicatePolicy::equal(Self, Self) -> Bool
 pub fn DuplicatePolicy::not_equal(Self, Self) -> Bool
+
+pub struct JUnitDocument {
+  root : JUnitElement
+  before : ReadOnlyArray[JUnitNode]
+  after : ReadOnlyArray[JUnitNode]
+  declaration : (String, String?, String?)?
+}
+pub fn JUnitDocument::from_xml(String) -> Self raise InputError
+pub fn JUnitDocument::map_cases(Self, (JUnitElement) -> JUnitElement? raise) -> Self raise
+pub fn JUnitDocument::map_suites(Self, (JUnitElement) -> JUnitElement? raise) -> Self raise
+pub fn JUnitDocument::new(root? : JUnitElement) -> Self
+pub fn JUnitDocument::to_report(Self, source? : String) -> Report raise InputError
+pub fn JUnitDocument::to_xml(Self, max_units? : Int64) -> String raise InputError
+pub fn JUnitDocument::with_root(Self, JUnitElement) -> Self
+pub fn JUnitDocument::with_statistics(Self, overwrite_time? : Bool) -> Self raise InputError
+pub fn JUnitDocument::write_to(Self, (String) -> Unit raise, max_units? : Int64) -> Unit raise
+
+pub struct JUnitElement {
+  name : String
+  attributes : ReadOnlyArray[(String, String)]
+  content : ReadOnlyArray[JUnitNode]
+}
+pub fn JUnitElement::add_property(Self, String, String) -> Self
+pub fn JUnitElement::append(Self, JUnitNode) -> Self
+pub fn JUnitElement::attribute(Self, String) -> String?
+pub fn JUnitElement::elements(Self, name? : String?) -> Array[Self]
+pub fn JUnitElement::new(String, attributes? : Array[(String, String)], content? : Array[JUnitNode]) -> Self
+pub fn JUnitElement::result(String, message? : String, type_? : String, body? : String) -> Self raise InputError
+pub fn JUnitElement::suite(String) -> Self
+pub fn JUnitElement::testcase(String, classname? : String?, time_us? : Int64?) -> Self raise InputError
+pub fn JUnitElement::with_attribute(Self, String, String) -> Self
+pub fn JUnitElement::with_content(Self, Array[JUnitNode]) -> Self
+pub fn JUnitElement::with_output(Self, String, String) -> Self raise InputError
+pub fn JUnitElement::with_results(Self, Array[Self]) -> Self raise InputError
+pub fn JUnitElement::without_attribute(Self, String) -> Self
+
+pub(all) enum JUnitNode {
+  Element(JUnitElement)
+  Text(String)
+  CData(String)
+  Comment(String)
+  Instruction(String, String)
+}
 
 #derive(Eq)
 pub(all) enum Outcome {

@@ -1,6 +1,6 @@
 name = "tc-adventureking/junit_delta"
 
-version = "0.2.0"
+version = "0.3.0"
 
 license = "MIT"
 
@@ -8,9 +8,9 @@ readme = "README.md"
 
 repository = "https://github.com/tc-adventureking/moon-junit-delta"
 
-description = "Deterministic JUnit XML comparison and CI gates in MoonBit"
+description = "JUnit XML creation, editing, merging and comparison in MoonBit"
 
-keywords = [ "junit", "ci", "testing", "regression" ]
+keywords = [ "junit", "xml", "reports", "testing" ]
 
 preferred_target = "wasm-gc"
 
