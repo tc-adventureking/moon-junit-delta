@@ -1,8 +1,8 @@
 name = "tc-adventureking/junit_delta"
 
-version = "0.3.0"
+version = "0.4.0"
 
-license = "MIT"
+license = "MIT AND Apache-2.0"
 
 readme = "README.md"
 

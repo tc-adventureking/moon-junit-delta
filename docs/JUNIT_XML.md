@@ -54,11 +54,11 @@ moon run examples/edit --target js
 
 编辑与 `to_xml` 不自动更新统计；此行为保留报告中的实际运行墙钟时间。`with_statistics` 会校验全部结构性时长及中间总和，即使外层套件已有时长也不跳过非法值或溢出。
 
-## 与 junitparser 5.0.3 对标
+## 原始文档接口的行为边界
 
-对照 [junitparser 5.0.3 的 API 与示例](https://pypi.org/project/junitparser/5.0.3/)，参考行为并独立实现。0.3.0 提供通用文档处理能力，但不与该 Python 库完全等价，也没有完成其全部输入和 API 的兼容性证明。
+本页只描述根包中从 0.3.0 保留的不可变 `JUnitDocument` API。0.4.0 新增的可变 `junit` 子包提供与 junitparser 5.0.3 对应的统计、合并、解析回调和 pretty 写回，详见[通用接口与对标](JUNIT.md)。以下差异只适用于旧接口，不代表整个库的功能范围。
 
-| 能力 | junitparser 5.0.3 | 本库 0.3.0 |
+| 能力 | junitparser 5.0.3 | 根包不可变 API |
 |---|---|---|
 | 读取、创建、修改报告 | 支持 | 完整树及 JUnit 便利构造器 |
 | XML 写回 | 文件或输出对象 | XML 字符串、宿主写入回调 |
@@ -69,7 +69,7 @@ moon run examples/edit --target js
 | 重复 ID、历史回归、门禁 | 非其核心比较能力 | 保留原有 `Report/compare` 层 |
 | 可替换 XML 引擎 | 支持 parse_func | 固定复用 Milky2018/xml |
 | 文件 I/O 与美化写出 | 文件接口、`pretty` 输出选项 | 宿主回调保存；无 `pretty` 格式化 |
-| 命令行操作 | `merge`、`verify` | `compare`、`jsonl`；文档合并通过库 API 提供 |
+| 命令行操作 | `merge`、`verify` | 文档操作通过库 API 提供；全库 CLI 见[使用指南](USAGE.md) |
 
 可复现的行为差异：一个用例包含两个 `failure` 时，Python 的失败统计为 2，本库为 1；两份具有相同套件身份的报告，Python 可归并为一个套件，本库保留两个；套件声明 `time=9`、用例时长合计 `0.3` 时，Python 更新统计后为 `0.3`，本库默认保留 `9`，仅显式覆盖时重算。
 

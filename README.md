@@ -1,45 +1,45 @@
 # junit-delta
 
-纯 MoonBit JUnit XML 创建、读取、编辑、写回与比较库。复用 Milky2018/xml，支持 wasm、wasm-gc、JavaScript 和 native。
+MoonBit JUnit XML 创建、读取、编辑、写回与比较库。支持 base/xunit2 报告模型，以及 wasm、wasm-gc、JavaScript 和 native。
 
 ## 功能
 
-- **文档处理**：创建与编辑套件、用例、结果、properties 和输出，保存为 JUnit XML。
-- **扩展保留**：完整消息、自定义属性和元素、混合文本、CDATA、注释及命名空间声明。
-- **合并与统计**：拼接独立报告，显式处理元数据冲突，更新用例统计和微秒时长。
-- **差异比较**：保留原有分片、重试、历史回归和 CI 门禁能力。
+- 创建和修改套件、用例、结果、properties、日志及自定义 XML 扩展。
+- 可变共享视图、深拷贝、惰性统计、套件归并和 xUnit2 重试结果。
+- 文件/字节/流回调、可替换解析器、普通及 pretty 写回。
+- CLI `merge`、`verify`、`--glob`，保留原有比较、重试归并和 CI 门禁。
 
-`merge_documents` 合并完整 XML；`merge_reports` 归并比较数据。参考 junitparser 5.0.3，具体对应能力及差异见[对标说明](docs/JUNIT_XML.md#与-junitparser-503-对标)。
+通用接口适配 junitparser 5.0.3；[对标与边界](docs/JUNIT.md)说明语言、解析器和资源差异。原有不可变 XML 与比较接口继续可用。
 
 ## 安装与使用
 
 ```sh
-moon add tc-adventureking/junit_delta@0.3.0
+moon add tc-adventureking/junit_delta@0.4.0
 ```
 
-应用包使用以下 `moon.pkg`，将示例保存为 `main.mbt`，运行 `moon run . --target js`：
+应用包的 `moon.pkg`：
 
 ```moonbit
-import { "tc-adventureking/junit_delta" @junit, }
+import { "tc-adventureking/junit_delta/junit", }
 pkgtype(kind: "executable")
 ```
 
+将以下内容保存为 `main.mbt`，运行 `moon run . --target js`：
+
 ```moonbit
 fn main raise {
-  let case = @junit.JUnitElement::testcase("login", classname=Some("api"))
-  let suite = @junit.JUnitElement::suite("service")
-    .add_property("build", "12")
-    .append(@junit.JUnitNode::Element(case))
-  let report = @junit.JUnitDocument::new(root=suite)
-  let edited = report.map_cases(c => Some(c.with_attribute("file", "login.mbt")))
-  edited.with_statistics().write_to(xml => println(xml))
+  let suite = @junit.TestSuite::new(name=Some("service"))
+  suite.add_case(@junit.TestCase::new(name=Some("login"), time=Some(0.12)))
+  suite.add_property("build", "12")
+  let report = @junit.JUnitXml::new()
+  report.add_suite(suite)
+  report.update_statistics()
+  println(report.element().write_xml(pretty=true))
 }
 ```
 
-输出带有 `build` 属性、`login` 用例及统计的 XML。已有报告可用 `JUnitDocument::from_xml(text)` 读取；写文件时向 `write_to` 传入宿主保存函数。编辑返回新值，统计需显式更新，输入和输出错误由调用者处理。
-
-[完整 API](pkg.generated.mbti) · [文档处理与对标](docs/JUNIT_XML.md) · [比较和 CLI](docs/USAGE.md)
+[通用 API](junit/pkg.generated.mbti) · [处理与对标](docs/JUNIT.md) · [不可变 XML](docs/JUNIT_XML.md) · [比较和 CLI](docs/USAGE.md)
 
 ## 许可
 
-项目使用 [MIT](LICENSE)，来源与依赖许可见[第三方声明](third_party/NOTICE.md)。本项目使用 AI 辅助设计与实现。
+原创实现使用 MIT，适配文件标注 Apache-2.0，见[第三方声明](third_party/NOTICE.md)。项目使用 AI 辅助设计与实现。

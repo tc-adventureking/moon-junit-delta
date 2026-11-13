@@ -1,0 +1,298 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "tc-adventureking/junit_delta/junit"
+
+import {
+  "moonbitlang/core/bigint",
+}
+
+// Values
+pub fn output_element(OutputKind, text? : String?) -> Element raise JUnitError
+
+// Errors
+#derive(Eq)
+pub(all) suberror JUnitError {
+  InvalidFormat(String)
+  InvalidValue(String)
+  ParseError(String)
+  MissingFile
+  LimitExceeded(String)
+}
+pub fn JUnitError::equal(Self, Self) -> Bool
+pub fn JUnitError::not_equal(Self, Self) -> Bool
+pub fn JUnitError::output(Self, &Logger) -> Unit
+pub fn JUnitError::to_string(Self) -> String
+pub impl Show for JUnitError
+
+// Types and methods
+type Element
+pub fn Element::append(Self, Self) -> Unit raise JUnitError
+pub fn Element::append_all(Self, Array[Self]) -> Unit raise JUnitError
+pub fn Element::attribute(Self, String) -> String?
+pub fn Element::attribute_items(Self) -> Array[(String, String)]
+pub fn Element::child(Self, String) -> Self?
+pub fn Element::children(Self, name? : String?) -> Array[Self]
+pub fn Element::clone(Self) -> Self raise JUnitError
+pub fn Element::comment(String) -> Self raise JUnitError
+pub fn Element::comparison_key(Self) -> String raise JUnitError
+pub fn Element::delete_attribute(Self, String) -> Unit
+pub fn Element::float_attribute(Self, String) -> Double? raise JUnitError
+pub fn Element::from_bytes(Bytes, decode? : ((Bytes) -> String raise)?) -> Self raise
+pub fn Element::from_decoded(String) -> Self raise JUnitError
+pub fn Element::from_string(String) -> Self raise JUnitError
+pub fn Element::insert(Self, Int32, Self) -> Unit raise JUnitError
+pub fn Element::instruction(String, data? : String) -> Self raise JUnitError
+pub fn Element::int_attribute(Self, String) -> @bigint.BigInt? raise JUnitError
+pub fn Element::is_comment(Self) -> Bool
+pub fn Element::is_element(Self) -> Bool
+pub fn Element::is_instruction(Self) -> Bool
+pub fn Element::iter(Self) -> Iter[Self]
+pub fn Element::iter_children(Self, name? : String?) -> Iter[Self]
+pub fn Element::new(String) -> Self raise JUnitError
+pub fn Element::output(Self, String) -> String?
+pub fn Element::parent(Self) -> Self?
+pub fn[T] Element::read_attribute(Self, String, (String) -> T raise) -> T? raise
+pub fn Element::remove_matching(Self, String, (Self) -> Bool raise) -> Unit raise
+pub fn Element::remove_node(Self, Self) -> Unit raise JUnitError
+pub fn Element::repr(Self) -> String
+pub fn Element::same_node(Self, Self) -> Bool
+pub fn Element::set_attribute(Self, String, String?) -> Unit raise JUnitError
+pub fn Element::set_float_attribute(Self, String, Double) -> Unit raise JUnitError
+pub fn Element::set_int_attribute(Self, String, @bigint.BigInt) -> Unit raise JUnitError
+pub fn Element::set_output(Self, String, String?) -> Unit raise JUnitError
+pub fn Element::set_tail(Self, String?) -> Unit raise JUnitError
+pub fn Element::set_text(Self, String?) -> Unit raise JUnitError
+pub fn Element::tag(Self) -> String
+pub fn Element::tail(Self) -> String?
+pub fn Element::text(Self) -> String?
+pub fn Element::to_xml(Self) -> String raise JUnitError
+pub fn[T] Element::write_attribute(Self, String, T, (T) -> String raise) -> Unit raise
+pub fn Element::write_to(Self, (Bytes) -> Unit raise, pretty? : Bool) -> Unit raise
+pub fn Element::write_xml(Self, pretty? : Bool) -> String raise JUnitError
+pub fn Element::xml_equal(Self, Self) -> Bool raise JUnitError
+
+#derive(Eq)
+pub(all) enum Flavor {
+  Base
+  XUnit2
+}
+pub fn Flavor::equal(Self, Self) -> Bool
+pub fn Flavor::not_equal(Self, Self) -> Bool
+
+type JUnitXml
+pub fn JUnitXml::add_suite(Self, TestSuite) -> Unit raise JUnitError
+pub fn JUnitXml::clear_skipped(Self) -> Unit raise JUnitError
+pub fn JUnitXml::clone(Self) -> Self raise JUnitError
+pub fn JUnitXml::element(Self) -> Element
+pub fn JUnitXml::errors(Self) -> @bigint.BigInt? raise JUnitError
+pub fn JUnitXml::extend_suites(Self, Iter[TestSuite]) -> Unit raise JUnitError
+pub fn JUnitXml::failures(Self) -> @bigint.BigInt? raise JUnitError
+pub fn JUnitXml::filepath(Self) -> String?
+pub fn JUnitXml::flavor(Self) -> Flavor
+pub fn JUnitXml::float_attribute(Self, String) -> Double? raise JUnitError
+pub fn JUnitXml::from_bytes(Bytes, flavor? : Flavor, decode? : ((Bytes) -> String raise)?) -> Self raise
+pub fn JUnitXml::from_decoded(String, flavor? : Flavor) -> Self raise JUnitError
+pub fn JUnitXml::from_element(Element, flavor? : Flavor) -> Self
+pub fn JUnitXml::from_file(String, (String) -> Bytes raise, flavor? : Flavor, parse? : ((Bytes) -> Element raise)?) -> Self raise
+pub fn JUnitXml::from_file_with(String, (String) -> Element raise, flavor? : Flavor) -> Self raise
+pub fn JUnitXml::from_reader(() -> Bytes raise, flavor? : Flavor, parse? : ((Bytes) -> Element raise)?) -> Self raise
+pub fn JUnitXml::from_root(Element, flavor? : Flavor) -> Self raise JUnitError
+pub fn JUnitXml::from_string(String, flavor? : Flavor) -> Self raise JUnitError
+pub fn JUnitXml::int_attribute(Self, String) -> @bigint.BigInt? raise JUnitError
+pub fn JUnitXml::len(Self) -> Int32
+pub fn JUnitXml::merge_inplace(Self, Self) -> Unit raise JUnitError
+pub fn JUnitXml::merge_suite_inplace(Self, TestSuite) -> Unit raise JUnitError
+pub fn JUnitXml::merged(Self, Self) -> Self raise JUnitError
+pub fn JUnitXml::merged_suite(Self, TestSuite) -> Self raise JUnitError
+pub fn JUnitXml::name(Self) -> String?
+pub fn JUnitXml::new(name? : String?, flavor? : Flavor) -> Self raise JUnitError
+pub fn JUnitXml::set_errors(Self, @bigint.BigInt) -> Unit raise JUnitError
+pub fn JUnitXml::set_failures(Self, @bigint.BigInt) -> Unit raise JUnitError
+pub fn JUnitXml::set_filepath(Self, String?) -> Unit
+pub fn JUnitXml::set_name(Self, String?) -> Unit raise JUnitError
+pub fn JUnitXml::set_skipped(Self, @bigint.BigInt) -> Unit raise JUnitError
+pub fn JUnitXml::set_tests(Self, @bigint.BigInt) -> Unit raise JUnitError
+pub fn JUnitXml::set_time(Self, Double) -> Unit raise JUnitError
+pub fn JUnitXml::set_time_int(Self, @bigint.BigInt) -> Unit raise JUnitError
+pub fn JUnitXml::skipped(Self) -> @bigint.BigInt? raise JUnitError
+pub fn JUnitXml::suites(Self) -> Iter[TestSuite]
+pub fn JUnitXml::tests(Self) -> @bigint.BigInt? raise JUnitError
+pub fn JUnitXml::time(Self) -> Double? raise JUnitError
+pub fn JUnitXml::update_statistics(Self) -> Unit raise JUnitError
+pub fn JUnitXml::write(Self, (String, Bytes) -> Unit raise, path? : String?, pretty? : Bool) -> Unit raise
+pub fn JUnitXml::write_to(Self, (Bytes) -> Unit raise, pretty? : Bool) -> Unit raise
+
+#derive(Eq)
+pub(all) enum OutputKind {
+  SystemOut
+  SystemErr
+  StackTrace
+}
+pub fn OutputKind::equal(Self, Self) -> Bool
+pub fn OutputKind::not_equal(Self, Self) -> Bool
+pub fn OutputKind::tag(Self) -> String
+
+type Properties
+pub fn Properties::add(Self, Property) -> Unit raise JUnitError
+pub fn Properties::element(Self) -> Element
+pub fn Properties::equal(Self, Self) -> Bool raise JUnitError
+pub fn Properties::from_element(Element) -> Self
+pub fn Properties::iter(Self) -> Iter[Property]
+pub fn Properties::new() -> Self raise JUnitError
+pub fn Properties::remove(Self, Property) -> Unit raise JUnitError
+
+type Property
+pub fn Property::element(Self) -> Element
+pub fn Property::equal(Self, Self) -> Bool
+pub fn Property::from_element(Element) -> Self
+pub fn Property::less(Self, Self) -> Bool raise JUnitError
+pub fn Property::name(Self) -> String?
+pub fn Property::new(name? : String?, value? : String?) -> Self raise JUnitError
+pub fn Property::set_name(Self, String?) -> Unit raise JUnitError
+pub fn Property::set_value(Self, String?) -> Unit raise JUnitError
+pub fn Property::value(Self) -> String?
+
+#derive(Eq)
+pub(all) enum ResultKind {
+  Failure
+  Error
+  Skipped
+  RerunFailure
+  RerunError
+  FlakyFailure
+  FlakyError
+}
+pub fn ResultKind::equal(Self, Self) -> Bool
+pub fn ResultKind::is_final(Self) -> Bool
+pub fn ResultKind::not_equal(Self, Self) -> Bool
+pub fn ResultKind::tag(Self) -> String
+
+pub(all) enum SuiteMerge {
+  Suite(TestSuite)
+  Document(JUnitXml)
+}
+
+type TestCase
+pub fn TestCase::add_interim_result(Self, TestResult) -> Unit raise JUnitError
+pub fn TestCase::add_property(Self, String, String) -> Unit raise JUnitError
+pub fn TestCase::classname(Self) -> String?
+pub fn TestCase::clone(Self) -> Self raise JUnitError
+pub fn TestCase::element(Self) -> Element
+pub fn TestCase::entries(Self) -> Iter[Element]
+pub fn TestCase::equal(Self, Self) -> Bool raise JUnitError
+pub fn TestCase::flaky_errors(Self) -> Array[TestResult]
+pub fn TestCase::flaky_failures(Self) -> Array[TestResult]
+pub fn TestCase::flavor(Self) -> Flavor
+pub fn TestCase::from_element(Element, flavor? : Flavor) -> Self
+pub fn TestCase::from_string(String, flavor? : Flavor) -> Self raise JUnitError
+pub fn TestCase::group(Self) -> String?
+pub fn TestCase::interim_results(Self, kind? : ResultKind?) -> Array[TestResult]
+pub fn TestCase::is_error(Self) -> Bool
+pub fn TestCase::is_failure(Self) -> Bool
+pub fn TestCase::is_flaky(Self) -> Bool
+pub fn TestCase::is_passed(Self) -> Bool
+pub fn TestCase::is_rerun(Self) -> Bool
+pub fn TestCase::is_skipped(Self) -> Bool
+pub fn TestCase::name(Self) -> String?
+pub fn TestCase::new(name? : String?, classname? : String?, time? : Double?, flavor? : Flavor) -> Self raise JUnitError
+pub fn TestCase::properties(Self) -> Iter[Property]
+pub fn TestCase::remove_property(Self, Property) -> Unit raise JUnitError
+pub fn TestCase::rerun_errors(Self) -> Array[TestResult]
+pub fn TestCase::rerun_failures(Self) -> Array[TestResult]
+pub fn TestCase::results(Self) -> Array[TestResult]
+pub fn TestCase::set_classname(Self, String?) -> Unit raise JUnitError
+pub fn TestCase::set_group(Self, String?) -> Unit raise JUnitError
+pub fn TestCase::set_name(Self, String?) -> Unit raise JUnitError
+pub fn TestCase::set_results(Self, Array[TestResult]) -> Unit raise JUnitError
+pub fn TestCase::set_system_err(Self, String?) -> Unit raise JUnitError
+pub fn TestCase::set_system_out(Self, String?) -> Unit raise JUnitError
+pub fn TestCase::set_time(Self, Double) -> Unit raise JUnitError
+pub fn TestCase::set_time_int(Self, @bigint.BigInt) -> Unit raise JUnitError
+pub fn TestCase::system_err(Self) -> String?
+pub fn TestCase::system_out(Self) -> String?
+pub fn TestCase::time(Self) -> Double? raise JUnitError
+
+type TestResult
+pub fn TestResult::element(Self) -> Element
+pub fn TestResult::equal(Self, Self) -> Bool
+pub fn TestResult::from_element(Element, ResultKind) -> Self
+pub fn TestResult::kind(Self) -> ResultKind
+pub fn TestResult::message(Self) -> String?
+pub fn TestResult::new(ResultKind, message? : String?, type_? : String?) -> Self raise JUnitError
+pub fn TestResult::set_message(Self, String?) -> Unit raise JUnitError
+pub fn TestResult::set_stack_trace(Self, String?) -> Unit raise JUnitError
+pub fn TestResult::set_system_err(Self, String?) -> Unit raise JUnitError
+pub fn TestResult::set_system_out(Self, String?) -> Unit raise JUnitError
+pub fn TestResult::set_text(Self, String?) -> Unit raise JUnitError
+pub fn TestResult::set_type_(Self, String?) -> Unit raise JUnitError
+pub fn TestResult::stack_trace(Self) -> String?
+pub fn TestResult::system_err(Self) -> String?
+pub fn TestResult::system_out(Self) -> String?
+pub fn TestResult::text(Self) -> String?
+pub fn TestResult::type_(Self) -> String?
+
+type TestSuite
+pub fn TestSuite::add_case(Self, TestCase) -> Unit raise JUnitError
+pub fn TestSuite::add_cases(Self, Array[TestCase]) -> Unit raise JUnitError
+pub fn TestSuite::add_property(Self, String, String) -> Unit raise JUnitError
+pub fn TestSuite::add_suite(Self, Self) -> Unit raise JUnitError
+pub fn TestSuite::cases(Self) -> Iter[TestCase]
+pub fn TestSuite::clone(Self) -> Self raise JUnitError
+pub fn TestSuite::element(Self) -> Element
+pub fn TestSuite::equal(Self, Self) -> Bool raise JUnitError
+pub fn TestSuite::errors(Self) -> @bigint.BigInt? raise JUnitError
+pub fn TestSuite::failures(Self) -> @bigint.BigInt? raise JUnitError
+pub fn TestSuite::file(Self) -> String?
+pub fn TestSuite::filepath(Self) -> String?
+pub fn TestSuite::flavor(Self) -> Flavor
+pub fn TestSuite::float_attribute(Self, String) -> Double? raise JUnitError
+pub fn TestSuite::from_element(Element, flavor? : Flavor) -> Self
+pub fn TestSuite::from_string(String, flavor? : Flavor) -> Self raise JUnitError
+pub fn TestSuite::group(Self) -> String?
+pub fn TestSuite::hostname(Self) -> String?
+pub fn TestSuite::id(Self) -> String?
+pub fn TestSuite::int_attribute(Self, String) -> @bigint.BigInt? raise JUnitError
+pub fn TestSuite::len(Self) -> Int32
+pub fn TestSuite::log(Self) -> String?
+pub fn TestSuite::merge_inplace(Self, Self) -> SuiteMerge raise JUnitError
+pub fn TestSuite::merged(Self, Self) -> SuiteMerge raise JUnitError
+pub fn TestSuite::name(Self) -> String?
+pub fn TestSuite::new(name? : String?, flavor? : Flavor) -> Self raise JUnitError
+pub fn TestSuite::package_(Self) -> String?
+pub fn TestSuite::properties(Self) -> Iter[Property]
+pub fn TestSuite::remove_case(Self, TestCase) -> Unit raise JUnitError
+pub fn TestSuite::remove_property(Self, Property) -> Unit raise JUnitError
+pub fn TestSuite::set_errors(Self, @bigint.BigInt) -> Unit raise JUnitError
+pub fn TestSuite::set_failures(Self, @bigint.BigInt) -> Unit raise JUnitError
+pub fn TestSuite::set_file(Self, String?) -> Unit raise JUnitError
+pub fn TestSuite::set_filepath(Self, String?) -> Unit
+pub fn TestSuite::set_group(Self, String?) -> Unit raise JUnitError
+pub fn TestSuite::set_hostname(Self, String?) -> Unit raise JUnitError
+pub fn TestSuite::set_id(Self, String?) -> Unit raise JUnitError
+pub fn TestSuite::set_log(Self, String?) -> Unit raise JUnitError
+pub fn TestSuite::set_name(Self, String?) -> Unit raise JUnitError
+pub fn TestSuite::set_package_(Self, String?) -> Unit raise JUnitError
+pub fn TestSuite::set_skipped(Self, @bigint.BigInt) -> Unit raise JUnitError
+pub fn TestSuite::set_system_err(Self, String?) -> Unit raise JUnitError
+pub fn TestSuite::set_system_out(Self, String?) -> Unit raise JUnitError
+pub fn TestSuite::set_tests(Self, @bigint.BigInt) -> Unit raise JUnitError
+pub fn TestSuite::set_time(Self, Double) -> Unit raise JUnitError
+pub fn TestSuite::set_time_int(Self, @bigint.BigInt) -> Unit raise JUnitError
+pub fn TestSuite::set_timestamp(Self, String?) -> Unit raise JUnitError
+pub fn TestSuite::set_url(Self, String?) -> Unit raise JUnitError
+pub fn TestSuite::set_version(Self, String?) -> Unit raise JUnitError
+pub fn TestSuite::skipped(Self) -> @bigint.BigInt? raise JUnitError
+pub fn TestSuite::suites(Self) -> Iter[Self]
+pub fn TestSuite::system_err(Self) -> String?
+pub fn TestSuite::system_out(Self) -> String?
+pub fn TestSuite::tests(Self) -> @bigint.BigInt? raise JUnitError
+pub fn TestSuite::time(Self) -> Double? raise JUnitError
+pub fn TestSuite::timestamp(Self) -> String?
+pub fn TestSuite::update_statistics(Self) -> Unit raise JUnitError
+pub fn TestSuite::url(Self) -> String?
+pub fn TestSuite::version(Self) -> String?
+pub fn TestSuite::write(Self, (String, Bytes) -> Unit raise, path? : String?, pretty? : Bool) -> Unit raise
+pub fn TestSuite::write_to(Self, (Bytes) -> Unit raise, pretty? : Bool) -> Unit raise
+
+// Type aliases
+
+// Traits

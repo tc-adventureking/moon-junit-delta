@@ -14,6 +14,8 @@ pub fn usage() -> String {
     #|                          [--fail-on LIST|none] [--slowdown-pct 50]
     #|                          [--slowdown-floor-ms 200] [--limit 50]
     #|       junit-delta jsonl
+    #|       junit-delta merge [--glob] [--suite-name NAME] INPUT... OUTPUT
+    #|       junit-delta verify [--glob] INPUT...
     #|       junit-delta --help | --version
     #|
     #|Repeated baselines are chronological runs, not shards. Candidates are current-run shards.
@@ -52,12 +54,17 @@ fn uint_arg(text : String, maximum : Int64) -> Int64 raise InputError {
 pub fn run_cli(
   args : Array[String],
   read : (String) -> String raise,
+  write~ : ((String, String) -> Unit raise)? = None,
+  glob~ : ((String) -> Array[String] raise)? = None,
 ) -> CliResult {
+  if !args.is_empty() && (args[0] == "merge" || args[0] == "verify") {
+    return run_report_cli(args, read, write~, glob~)
+  }
   try {
     if args == ["--help"] || args == ["-h"] {
       return { stdout: usage(), stderr: "", status: 0, }
     }
-    if args == ["--version"] {
+    if args == ["--version"] || args == ["-v"] {
       return {
         stdout: "junit-delta \{release_version}\n",
         stderr: "",

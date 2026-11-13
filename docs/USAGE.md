@@ -2,7 +2,19 @@
 
 Mooncakes 提供库与 API；以下命令在源码仓库运行，需要 MoonBit 和 Node.js 24。源码启动器自动增量编译，报告写入 stdout，错误写入 stderr。
 
-## CLI 参数
+## 报告合并与检查
+
+```sh
+node bin/junit-delta.mjs merge report-a.xml report-b.xml combined.xml
+node bin/junit-delta.mjs merge --glob "reports/*.xml" --suite-name build -
+node bin/junit-delta.mjs verify --glob "reports/*.xml"
+```
+
+`merge` 将最后一个参数作为输出，其余为输入；`-` 输出到 stdout，输入位置的 `-` 读取 stdin。等价套件按通用 `junit` 模型归并并重算统计，`--suite-name` 设置输出根的 name。`verify` 遍历结果，遇到未跳过的失败或错误即返回 1；它不更新统计。两条命令成功返回 0，运行/输入错误返回 1，参数错误返回 2。
+
+`--glob` 由 Node 宿主展开；点文件须显式匹配，`**` 与 Python 默认非递归 glob 一致，只匹配一层。需要保留通配符时按上述方式加引号。文件内容默认支持 UTF-8/UTF-16，其他编码使用 Node 的解码能力；不存在统一编码全覆盖承诺。比较命令和 JSONL 保持 UTF-8 输入及原退出码。
+
+## 比较命令参数
 
 ```sh
 node bin/junit-delta.mjs compare --baseline baseline.xml --candidate current.xml --format json
@@ -84,7 +96,7 @@ CI 维护者将原有 auth、billing、audit 用例迁入两个分片；当前�
 | `diff_config(...)` | 校验门禁与耗时配置 |
 | `to_json / to_json_string / to_markdown / to_text` | 渲染比较结果 |
 | `evaluate_request(text)` | 无 I/O 的 JSON 请求入口 |
-| `run_cli(args, read)` | 可注入读取函数的 CLI 核心 |
+| `run_cli(args, read, write?, glob?)` | 可注入读取函数的 CLI 核心 |
 
 完整签名见[公开 API](../pkg.generated.mbti)。比较 JSON 的 [Schema](../schemas/report.schema.json) 对应 `schema_version:1`，只约束比较 report，不约束请求或原始读取结果。
 

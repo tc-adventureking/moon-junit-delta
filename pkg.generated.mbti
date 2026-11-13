@@ -26,7 +26,7 @@ pub fn parse_duration(String) -> Int64? raise InputError
 
 pub fn parse_report(String, source? : String, duplicates? : DuplicatePolicy) -> Report raise InputError
 
-pub fn run_cli(Array[String], (String) -> String raise) -> CliResult
+pub fn run_cli(Array[String], (String) -> String raise, write? : ((String, String) -> Unit raise)?, glob? : ((String) -> Array[String] raise)?) -> CliResult
 
 pub fn usage() -> String
 

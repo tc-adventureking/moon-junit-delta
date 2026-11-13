@@ -1,0 +1,8 @@
+import {
+  "moonbitlang/core/string",
+  "moonbitlang/core/bigint",
+  "moonbitlang/core/ref",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/encoding/utf16",
+  "Milky2018/xml",
+}
