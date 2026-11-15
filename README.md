@@ -1,45 +1,79 @@
-# junit-delta
+# moon-junit-delta
 
-MoonBit JUnit XML 创建、读取、编辑、写回与比较库。支持 base/xunit2 报告模型，以及 wasm、wasm-gc、JavaScript 和 native。
+MoonBit 通用 JUnit XML 创建、读取、编辑、写回与比较库。通用报告接口以 junitparser 5.0.3 为行为参考，支持 wasm、wasm-gc、JavaScript 和 native；底层 XML 复用 Milky2018/xml。
 
 ## 功能
 
-- 创建和修改套件、用例、结果、properties、日志及自定义 XML 扩展。
-- 可变共享视图、深拷贝、惰性统计、套件归并和 xUnit2 重试结果。
-- 文件/字节/流回调、可替换解析器、普通及 pretty 写回。
-- CLI `merge`、`verify`、`--glob`，保留原有比较、重试归并和 CI 门禁。
+- **报告与套件 `JUnitXml` / `TestSuite`**：创建、解析、用例管理、properties、嵌套套件、惰性统计、归并和普通/pretty 写回。
+- **用例与结果 `TestCase` / `TestResult`**：名称、类名、耗时、失败/错误/跳过结果、日志，以及 xUnit2 的重跑与不稳定测试记录。
+- **XML 扩展 `Element`**：自定义元素和属性、命名空间、混合文本、类型转换回调，以及可替换的解码与解析入口。
+- **文档与比较 `JUnitDocument` / `Report`**：保留不可变 XML 编辑、分片与重试归并、历史差异、JSON/Markdown 输出和 CI 门禁。
 
-通用接口适配 junitparser 5.0.3；[对标与边界](docs/JUNIT.md)说明语言、解析器和资源差异。原有不可变 XML 与比较接口继续可用。
+通用报告模型使用共享节点视图，修改视图会影响同一报告；`clone()` 创建深拷贝。文件和流通过宿主回调接入，解析与写回会构造完整报告树或输出。
 
 ## 安装与使用
 
-```sh
+```bash
 moon add tc-adventureking/junit_delta@0.4.0
 ```
 
-应用包的 `moon.pkg`：
+在 `moon.pkg` 中为下面的消费测试导入：
 
 ```moonbit
-import { "tc-adventureking/junit_delta/junit", }
-pkgtype(kind: "executable")
+import { "tc-adventureking/junit_delta/junit" @junit, } for "test"
 ```
 
-将以下内容保存为 `main.mbt`，运行 `moon run . --target js`：
-
 ```moonbit
-fn main raise {
+test "create and edit report" {
+  let case = @junit.TestCase::new(name=Some("login"), time=Some(0.12))
   let suite = @junit.TestSuite::new(name=Some("service"))
-  suite.add_case(@junit.TestCase::new(name=Some("login"), time=Some(0.12)))
-  suite.add_property("build", "12")
+  suite.add_case(case)
   let report = @junit.JUnitXml::new()
   report.add_suite(suite)
+
+  case.set_results([@junit.TestResult::new(Failure, message=Some("timeout"))])
   report.update_statistics()
-  println(report.element().write_xml(pretty=true))
+  assert_false(case.is_passed())
+  assert_eq(report.tests().unwrap().to_string(), "1")
+
+  let xml = report.element().write_xml(pretty=true)
+  let restored = @junit.JUnitXml::from_decoded(xml)
+  assert_eq(restored.failures().unwrap().to_string(), "1")
 }
 ```
 
-[通用 API](junit/pkg.generated.mbti) · [处理与对标](docs/JUNIT.md) · [不可变 XML](docs/JUNIT_XML.md) · [比较和 CLI](docs/USAGE.md)
+`from_string` 用于不含编码声明的 Unicode XML；带声明的字节输入使用 `from_bytes`，宿主已解码的文本使用 `from_decoded`。`pretty=true` 会调整混合内容的空白；通用模型与原不可变文档的统计、归并规则不同。
+
+[完整 API](junit/pkg.generated.mbti) · [Python 对照与差异](docs/JUNIT.md) · [不可变 XML](docs/JUNIT_XML.md) · [使用场景](docs/USAGE.md)
+
+## 示例与测试
+
+安装 MoonBit 工具链后在仓库运行编辑示例：
+
+```bash
+moon run examples/edit --target wasm-gc
+```
+
+在导入此库的消费项目中，将上方用例保存为 `report_test.mbt` 后运行：
+
+```bash
+moon test --deny-warn --target all
+```
+
+编辑示例演示用例构建、属性更新、统计和 XML 写回；上方消费测试验证共享视图编辑、失败统计及格式化输出后的重新解析。
+
+## JUnit 报告 CLI
+
+源码启动器需要 Node.js 24 和 MoonBit 工具链。`merge`、`verify` 支持 `--glob` 和标准输入 `-`，`merge` 的输出路径 `-` 表示 stdout：
+
+```bash
+node bin/junit-delta.mjs merge report-a.xml report-b.xml combined.xml
+node bin/junit-delta.mjs verify combined.xml
+node bin/junit-delta.mjs compare --baseline baseline.xml --candidate current.xml --format json
+```
+
+`merge` / `verify` 退出码：`0` 成功，`1` 测试结果未通过或输入/运行错误，`2` 参数错误。`compare` / `jsonl` 退出码：`0` 通过，`1` 门禁违规，`2` 输入或运行错误。[命令与 JSONL 协议](docs/USAGE.md)。
 
 ## 许可
 
-原创实现使用 MIT，适配文件标注 Apache-2.0，见[第三方声明](third_party/NOTICE.md)。项目使用 AI 辅助设计与实现。
+原创实现使用 [MIT](LICENSE)；junitparser 适配文件标注 [Apache-2.0](third_party/Apache-2.0.txt)，保留上游版权声明。XML 依赖和 MoonBit 标准库保留其自身许可。来源与修改说明见[第三方声明](third_party/NOTICE.md)。
