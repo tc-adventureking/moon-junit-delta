@@ -118,6 +118,7 @@ pub fn JUnitXml::suites(Self) -> Iter[TestSuite]
 pub fn JUnitXml::tests(Self) -> @bigint.BigInt? raise JUnitError
 pub fn JUnitXml::time(Self) -> Double? raise JUnitError
 pub fn JUnitXml::update_statistics(Self) -> Unit raise JUnitError
+pub fn JUnitXml::update_statistics_with_root_cases(Self) -> Unit raise JUnitError
 pub fn JUnitXml::write(Self, (String, Bytes) -> Unit raise, path? : String?, pretty? : Bool) -> Unit raise
 pub fn JUnitXml::write_to(Self, (Bytes) -> Unit raise, pretty? : Bool) -> Unit raise
 

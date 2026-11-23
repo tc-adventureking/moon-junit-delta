@@ -15,6 +15,10 @@ extern "js" fn glob_files(pattern : String) -> String =
   #| (pattern) => globalThis.__junitDeltaGlob(pattern)
 
 ///|
+extern "js" fn same_file(source : String, output : String) -> String =
+  #| (source, output) => globalThis.__junitDeltaSameFile(source, output)
+
+///|
 extern "js" fn write_result(
   stdout : String,
   stderr : String,
@@ -52,6 +56,14 @@ fn main raise {
         _ => raise @delta.InvalidInput("invalid host write response")
       }
     }),
+    same_file=(source, output) => {
+      match @json.parse(same_file(source, output)) {
+        True => true
+        False => false
+        { "error": String(error), .. } => raise @delta.InvalidInput(error)
+        _ => raise @delta.InvalidInput("invalid host file identity response")
+      }
+    },
     glob=Some(pattern => {
       match @json.parse(glob_files(pattern)) {
         Array(paths) =>

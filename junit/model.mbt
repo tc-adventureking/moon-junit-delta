@@ -658,14 +658,23 @@ pub fn TestSuite::equal(
 }
 
 ///|
-pub fn TestSuite::update_statistics(self : TestSuite) -> Unit raise JUnitError {
+priv struct CaseStatistics {
+  tests : Int32
+  failures : Int32
+  errors : Int32
+  skipped : Int32
+  time : Double?
+}
+
+///|
+fn case_statistics(cases : Iter[TestCase]) -> CaseStatistics raise JUnitError {
   let mut tests = 0
   let mut errors = 0
   let mut failures = 0
   let mut skipped = 0
   let mut time = 0.0
   let mut timed = false
-  for case in self.cases() {
+  for case in cases {
     tests += 1
     if tests > 1000000 {
       raise LimitExceeded("statistics exceeds 1000000 cases")
@@ -683,13 +692,34 @@ pub fn TestSuite::update_statistics(self : TestSuite) -> Unit raise JUnitError {
       }
     }
   }
-  self.element_.set_attribute("tests", Some(tests.to_string()))
-  self.element_.set_attribute("errors", Some(errors.to_string()))
-  self.element_.set_attribute("failures", Some(failures.to_string()))
-  self.element_.set_attribute("skipped", Some(skipped.to_string()))
+  {
+    tests,
+    failures,
+    errors,
+    skipped,
+    time: if timed {
+      Some(time)
+    } else {
+      None
+    },
+  }
+}
+
+///|
+pub fn TestSuite::update_statistics(self : TestSuite) -> Unit raise JUnitError {
+  let stats = case_statistics(self.cases())
+  self.element_.set_attribute("tests", Some(stats.tests.to_string()))
+  self.element_.set_attribute("errors", Some(stats.errors.to_string()))
+  self.element_.set_attribute("failures", Some(stats.failures.to_string()))
+  self.element_.set_attribute("skipped", Some(stats.skipped.to_string()))
   self.element_.set_attribute(
     "time",
-    Some(if timed { py_repr(py_round3(time)) } else { "0" }),
+    Some(
+      match stats.time {
+        Some(time) => py_repr(py_round3(time))
+        None => "0"
+      },
+    ),
   )
 }
 
@@ -856,12 +886,33 @@ pub fn JUnitXml::add_suite(
 
 ///|
 pub fn JUnitXml::update_statistics(self : JUnitXml) -> Unit raise JUnitError {
-  let mut tests = @bigint.BigInt::from_int(0)
-  let mut failures = @bigint.BigInt::from_int(0)
-  let mut errors = @bigint.BigInt::from_int(0)
-  let mut skipped = @bigint.BigInt::from_int(0)
-  let mut time = 0.0
-  let mut timed = false
+  self.update_root_statistics(Iter::empty())
+}
+
+///|
+/// Include testcase children of testsuites, as emitted by Node's JUnit reporter.
+pub fn JUnitXml::update_statistics_with_root_cases(
+  self : JUnitXml,
+) -> Unit raise JUnitError {
+  self.update_root_statistics(
+    self.element_
+    .iter_children(name=Some("testcase"))
+    .map(node => TestCase::from_element(node, flavor=self.flavor_)),
+  )
+}
+
+///|
+fn JUnitXml::update_root_statistics(
+  self : JUnitXml,
+  direct : Iter[TestCase],
+) -> Unit raise JUnitError {
+  let stats = case_statistics(direct)
+  let mut tests = @bigint.BigInt::from_int(stats.tests)
+  let mut failures = @bigint.BigInt::from_int(stats.failures)
+  let mut errors = @bigint.BigInt::from_int(stats.errors)
+  let mut skipped = @bigint.BigInt::from_int(stats.skipped)
+  let mut time = stats.time.unwrap_or(0.0)
+  let mut timed = stats.time is Some(_)
   for suite in self.suites() {
     suite.update_statistics()
     tests += suite.element_.int_attribute("tests").unwrap()

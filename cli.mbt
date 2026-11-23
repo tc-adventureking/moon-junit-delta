@@ -22,7 +22,8 @@ pub fn usage() -> String {
     #|JSONL reads one request per line from stdin. '-' reads stdin once in compare mode.
     #|Gate names: new_failure,added_failing,still_failing,removed,newly_skipped,flaky,slowdown,empty_report
     #|Default gates: new_failure,added_failing,removed,empty_report.
-    #|Exit: 0 pass, 1 gate violation, 2 input/usage error. Local tool: no network calls.
+    #|compare/jsonl: 0 pass, 1 gate violation, 2 input, usage or runtime error.
+    #|merge/verify: 0 success, 1 failed tests or input/runtime error, 2 usage or launcher error.
     #|
   text
 }
@@ -56,9 +57,10 @@ pub fn run_cli(
   read : (String) -> String raise,
   write~ : ((String, String) -> Unit raise)? = None,
   glob~ : ((String) -> Array[String] raise)? = None,
+  same_file~ : (String, String) -> Bool raise = (a, b) => a == b,
 ) -> CliResult {
   if !args.is_empty() && (args[0] == "merge" || args[0] == "verify") {
-    return run_report_cli(args, read, write~, glob~)
+    return run_report_cli(args, read, write~, glob~, same_file~)
   }
   try {
     if args == ["--help"] || args == ["-h"] {

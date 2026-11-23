@@ -75,6 +75,7 @@ fn run_report_cli(
   read : (String) -> String raise,
   write~ : ((String, String) -> Unit raise)?,
   glob~ : ((String) -> Array[String] raise)?,
+  same_file~ : (String, String) -> Bool raise = (a, b) => a == b,
 ) -> CliResult {
   let command = args[0]
   let paths = []
@@ -181,8 +182,11 @@ fn run_report_cli(
   let output = if command == "merge" { paths.pop().unwrap() } else { "" }
   try {
     let result = @junit.JUnitXml::new()
+    let mut saw_case = false
+    let mut used_stdin = false
     for pattern in paths {
-      let sources = if use_glob {
+      let expand = use_glob && pattern != "-"
+      let sources = if expand {
         match glob {
           Some(glob) => glob(pattern)
           None =>
@@ -191,25 +195,52 @@ fn run_report_cli(
       } else {
         [pattern]
       }
+      let mut matched = false
       for path in sources {
+        if expand &&
+          command == "merge" &&
+          output != "-" &&
+          same_file(path, output) {
+          continue
+        }
+        if path == "-" {
+          if used_stdin {
+            raise InvalidInput("standard input can only be read once")
+          }
+          used_stdin = true
+        }
+        matched = true
         let report = @junit.JUnitXml::from_decoded(read(path))
         if command == "verify" {
-          for suite in report.suites() {
-            for case in suite.cases() {
-              if !case.is_passed() && !case.is_skipped() {
-                return { stdout: "", stderr: "", status: 1, }
-              }
+          let root = @junit.TestSuite::from_element(report.element())
+          for case in root.cases() {
+            saw_case = true
+            if !case.is_passed() && !case.is_skipped() {
+              let name = case.name().unwrap_or("(unnamed)")
+              raise InvalidInput("\{path}: failed testcase \{name}")
             }
           }
         } else {
-          result.merge_inplace(report)
+          // Keep root cases at the root so classless case IDs survive a merge.
+          for node in report.element().iter_children(name=Some("testcase")) {
+            result.element().append(node.clone())
+          }
+          for suite in report.suites() {
+            result.add_suite(suite.clone())
+          }
         }
+      }
+      if !matched {
+        raise InvalidInput("no input reports matched \{pattern}")
       }
     }
     if command == "verify" {
+      if !saw_case {
+        raise InvalidInput("reports contain no testcases")
+      }
       return { stdout: "", stderr: "", status: 0, }
     }
-    result.update_statistics()
+    result.update_statistics_with_root_cases()
     if suite_name is Some(name) && name != "" {
       result.set_name(Some(name))
     }

@@ -48,9 +48,11 @@ test "create and edit report" {
 
 ## 示例与测试
 
-安装 MoonBit 工具链后在仓库运行编辑示例：
+安装 MoonBit 和 Node.js 24 后，可在源码仓库运行四后端回归、CLI 测试和编辑示例：
 
 ```bash
+moon test --deny-warn --target all
+node --test tests/cli.test.mjs
 moon run examples/edit --target wasm-gc
 ```
 
@@ -72,7 +74,9 @@ node bin/junit-delta.mjs verify combined.xml
 node bin/junit-delta.mjs compare --baseline baseline.xml --candidate current.xml --format json
 ```
 
-`merge` / `verify` 退出码：`0` 成功，`1` 测试结果未通过或输入/运行错误，`2` 参数错误。`compare` / `jsonl` 退出码：`0` 通过，`1` 门禁违规，`2` 输入或运行错误。[命令与 JSONL 协议](docs/USAGE.md)。
+相较于已发布的 0.4.0，当前源码的 CLI 会保留并检查 Node.js 写在根节点下的用例。每个 glob 必须匹配输入，合并时自动排除输出文件。
+
+`merge` / `verify` 退出码：`0` 成功，`1` 测试结果未通过或输入/运行错误，`2` 参数或启动器错误。`compare` / `jsonl` 退出码：`0` 通过，`1` 门禁违规，`2` 输入或运行错误。[命令与 JSONL 协议](docs/USAGE.md)。
 
 ## 许可
 

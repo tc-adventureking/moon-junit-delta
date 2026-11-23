@@ -1,5 +1,5 @@
 // Internal runtime: node bin/run.mjs COMPILED_ENTRY [arguments...]
-import { openSync, closeSync, readSync, writeFileSync } from 'node:fs';
+import { openSync, closeSync, readSync, realpathSync, statSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { expandGlob, filesystemPath } from './glob.mjs';
 
@@ -62,7 +62,25 @@ globalThis.__junitDeltaWrite = (path, text) => {
   try { writeFileSync(filesystemPath(path), text, 'utf8'); return JSON.stringify({ ok: true }); }
   catch (error) { return JSON.stringify({ ok: false, error: `${path}: ${error.message}` }); }
 };
-globalThis.__junitDeltaGlob = (pattern) => JSON.stringify(expandGlob(pattern));
+// A file named "-" matched by a wildcard is a file, not the stdin operand.
+globalThis.__junitDeltaGlob = pattern => JSON.stringify(
+  expandGlob(pattern).map(path => path === '-' ? './-' : path)
+);
+function sameFile(source, output) {
+  if (source === output) return true;
+  const dest = filesystemPath(output);
+  const target = statSync(dest, { bigint: true, throwIfNoEntry: false });
+  if (!target) return false;
+  const input = filesystemPath(source);
+  const file = statSync(input, { bigint: true, throwIfNoEntry: false });
+  if (!file) return false;
+  if (target.ino && file.ino) return file.dev === target.dev && file.ino === target.ino;
+  return realpathSync.native(input) === realpathSync.native(dest);
+}
+globalThis.__junitDeltaSameFile = (source, output) => {
+  try { return JSON.stringify(sameFile(source, output)); }
+  catch (error) { return JSON.stringify({ error: error.message }); }
+};
 try {
   const entry = process.argv[2];
   process.argv.splice(1, 1);
