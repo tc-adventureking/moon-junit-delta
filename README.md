@@ -31,6 +31,7 @@ test "create and edit report" {
   let report = @junit.JUnitXml::new()
   report.add_suite(suite)
 
+  case.element().set_attribute("file", Some("tests/login.mbt"))
   case.set_results([@junit.TestResult::new(Failure, message=Some("timeout"))])
   report.update_statistics()
   assert_false(case.is_passed())
@@ -38,6 +39,8 @@ test "create and edit report" {
 
   let xml = report.element().write_xml(pretty=true)
   let restored = @junit.JUnitXml::from_decoded(xml)
+  let saved = restored.suites().next().unwrap().cases().next().unwrap()
+  assert_eq(saved.element().attribute("file"), Some("tests/login.mbt"))
   assert_eq(restored.failures().unwrap().to_string(), "1")
 }
 ```

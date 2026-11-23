@@ -17,6 +17,8 @@ report.update_statistics()
 let xml = report.element().write_xml()
 ```
 
+删除套件时，从其直接父节点取得共享元素并调用 `parent.element().remove_node(suite.element())`，然后调用报告的 `update_statistics()` 更新计数。
+
 `set_results` 接收最终结果；`add_interim_result` 追加结果节点。以 `flavor=XUnit2` 创建或解析时，`interim_results`、`rerun_failures`、`flaky_errors` 等查询包含 xUnit2 重试记录，`stack_trace` 等访问器读写其子节点。`group`、`id`、`package_`、`file`、`log`、`url`、`version` 有对应方法。
 
 `Element` 支持任意属性、子元素、混合文本、注释和处理指令，名称采用 `{namespace}local` 形式。`element()` 取得共享节点；`from_element` 将节点包装成所需视图。`read_attribute` / `write_attribute` 接受自定义类型转换函数。CDATA 在通用模型中合并为文本；需要保留 CDATA 节点时使用原始 `JUnitDocument` API。
@@ -85,5 +87,3 @@ python tests/check_parity.py
 ```
 
 脚本分别运行两个实现，比较创建报告、共享视图编辑、嵌套内容、统计与浮点时长、等价套件归并、xUnit2 及 XML 写回，并核对普通报告的 CLI 合并结果和验证退出码。Node 根级用例与空输入的 CLI 差异见[使用指南](USAGE.md)。
-
-删除套件时，从其直接父节点取得共享元素并调用 `parent.element().remove_node(suite.element())`，然后调用报告的 `update_statistics()` 更新计数。
