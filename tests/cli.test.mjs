@@ -67,6 +67,31 @@ test('rerunning merge ignores its output and hard-link aliases', t => {
   }
 });
 
+test('merging nested shards keeps classless testcase identities and counts', t => {
+  const dir = workspace(t);
+  const left = '<testsuite name="run"><testsuite name="web"><testcase name="login"/></testsuite></testsuite>';
+  const right = '<testsuite name="run"><testsuite name="api"><testcase name="login"><failure/></testcase></testsuite></testsuite>';
+  writeFileSync(join(dir, 'web.xml'), left);
+  writeFileSync(join(dir, 'api.xml'), right);
+  const merged = run(dir, ['merge', 'web.xml', 'api.xml', 'merged.xml']);
+  assert.equal(merged.status, 0, merged.stderr);
+  const xml = readFileSync(join(dir, 'merged.xml'), 'utf8');
+  assert.match(xml, /<testsuites\b[^>]*tests="2"/);
+  assert.match(xml, /<testsuites\b[^>]*failures="1"/);
+  assert.equal((xml.match(/<testcase\b/g) || []).length, 2);
+  assert.match(xml, /<testsuite\b[^>]*name="api"[^>]*>\s*<testcase\b[^>]*name="login"/);
+  const comparison = run(dir, ['compare', '--baseline', 'merged.xml', '--candidate', 'web.xml', '--candidate', 'api.xml', '--format', 'json']);
+  assert.equal(comparison.status, 0, comparison.stderr || comparison.stdout);
+  const checked = run(dir, ['verify', 'merged.xml']);
+  assert.equal(checked.status, 1);
+  assert.match(checked.stderr, /failed testcase login/);
+  writeFileSync(join(dir, 'invalid.xml'), '<testsuite name="run"><testsuites><testsuite><testcase/></testsuite></testsuites></testsuite>');
+  const invalid = run(dir, ['merge', 'web.xml', 'invalid.xml', 'merged.xml']);
+  assert.equal(invalid.status, 1, invalid.stderr);
+  assert.match(invalid.stderr, /nested testsuites/);
+  assert.equal(readFileSync(join(dir, 'merged.xml'), 'utf8'), xml);
+});
+
 test('globbed dash filename and empty files do not turn into a passing check', t => {
   const dir = workspace(t);
   writeFileSync(join(dir, '-'), '<testsuite><testcase name="dash"><error/></testcase></testsuite>');

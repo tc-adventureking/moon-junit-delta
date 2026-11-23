@@ -181,7 +181,7 @@ fn run_report_cli(
   }
   let output = if command == "merge" { paths.pop().unwrap() } else { "" }
   try {
-    let result = @junit.JUnitXml::new()
+    let shard_paths = []
     let mut saw_case = false
     let mut used_stdin = false
     for pattern in paths {
@@ -210,8 +210,8 @@ fn run_report_cli(
           used_stdin = true
         }
         matched = true
-        let report = @junit.JUnitXml::from_decoded(read(path))
         if command == "verify" {
+          let report = @junit.JUnitXml::from_decoded(read(path))
           let root = @junit.TestSuite::from_element(report.element())
           for case in root.cases() {
             saw_case = true
@@ -221,13 +221,7 @@ fn run_report_cli(
             }
           }
         } else {
-          // Keep root cases at the root so classless case IDs survive a merge.
-          for node in report.element().iter_children(name=Some("testcase")) {
-            result.element().append(node.clone())
-          }
-          for suite in report.suites() {
-            result.add_suite(suite.clone())
-          }
+          shard_paths.push(path)
         }
       }
       if !matched {
@@ -240,7 +234,9 @@ fn run_report_cli(
       }
       return { stdout: "", stderr: "", status: 0, }
     }
-    result.update_statistics_with_root_cases()
+    let result = @junit.merge_shards_from(shard_paths.iter(), path => {
+      @junit.JUnitXml::from_decoded(read(path))
+    })
     if suite_name is Some(name) && name != "" {
       result.set_name(Some(name))
     }

@@ -50,6 +50,7 @@
 !/junit/fields.mbt
 !/junit/io.mbt
 !/junit/model.mbt
+!/junit/shards.mbt
 !/junit/moon.pkg
 !/junit/numeric.mbt
 !/junit/pkg.generated.mbti

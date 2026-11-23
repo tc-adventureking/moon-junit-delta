@@ -14,7 +14,7 @@ MoonBit 通用 JUnit XML 创建、读取、编辑、写回与比较库。通用�
 ## 安装与使用
 
 ```bash
-moon add tc-adventureking/junit_delta@0.5.0
+moon add tc-adventureking/junit_delta@0.6.0
 ```
 
 在 `moon.pkg` 中为下面的消费测试导入：
@@ -79,7 +79,7 @@ node bin/junit-delta.mjs verify combined.xml
 node bin/junit-delta.mjs compare --baseline baseline.xml --candidate current.xml --format json
 ```
 
-0.5.0 的 CLI 会保留并检查 Node.js 写在根节点下的用例。每个 glob 必须匹配输入，合并时会从 glob 匹配结果中排除输出文件。
+0.6.0 的 CLI 使用 `@junit.merge_shards` 的规则归并分片。无类名用例保留原套件路径，Node.js 的根级用例保留在根下；合并后会重算每层套件的数量、失败数和耗时。每个 glob 必须匹配输入，合并时会从 glob 匹配结果中排除输出文件。
 
 `merge` / `verify` 退出码：`0` 成功，`1` 测试结果未通过或输入/运行错误，`2` 参数或启动器错误。`compare` / `jsonl` 退出码：`0` 通过，`1` 门禁违规，`2` 输入或运行错误。[命令与 JSONL 协议](docs/USAGE.md)。
 
