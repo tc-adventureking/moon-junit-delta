@@ -52,6 +52,7 @@ test('rerunning merge ignores its output and hard-link aliases', t => {
   assert.equal(first.status, 0, first.stderr);
   const expected = readFileSync(file('out.xml'), 'utf8');
   assert.match(expected, /tests="1"/);
+  assert.match(expected, /<testsuites\b[^>]*>\s*<testsuite\b[^>]*>\s*<testcase\b[^>]*name="only"/);
   linkSync(file('out.xml'), file('alias.xml'));
   for (let n = 0; n < 2; n++) {
     const next = merge();
