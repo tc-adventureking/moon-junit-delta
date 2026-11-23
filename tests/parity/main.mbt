@@ -43,4 +43,31 @@ fn main raise {
   rerun.add_property("attempt", "2")
   retries.update_statistics()
   println(retries.element().to_xml())
+
+  let a = "<testsuites><testsuite name='s'><testcase name='a'/></testsuite></testsuites>"
+  let b = "<testsuites><testsuite name='s'><testsuite name='inner'><testcase name='b'/></testsuite><testcase name='c'/></testsuite></testsuites>"
+  let left = @junit.JUnitXml::from_string(a, flavor=XUnit2)
+  let right = @junit.JUnitXml::from_string(b, flavor=XUnit2)
+  println(left.merged(right).element().to_xml())
+  println(left.merged(left).element().to_xml())
+  left.merge_inplace(right)
+  println(left.element().to_xml())
+  println(right.element().to_xml())
+  let suite = @junit.JUnitXml::from_string(a, flavor=XUnit2)
+    .suites()
+    .next()
+    .unwrap()
+  let other = @junit.JUnitXml::from_string(b, flavor=XUnit2)
+    .suites()
+    .next()
+    .unwrap()
+  guard suite.merged(other) is Suite(merged) else {
+    abort("expected equal suites")
+  }
+  println(merged.element().to_xml())
+  guard suite.merge_inplace(other) is Suite(changed) else {
+    abort("expected equal suites")
+  }
+  println(changed.element().to_xml())
+  println(other.element().to_xml())
 }

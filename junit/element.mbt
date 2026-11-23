@@ -26,6 +26,7 @@ priv struct ElementState {
   mut trailing : String?
   children_ : Array[Int64]
   mut parent_ : Int64?
+  mut sibling_hint : Int32
 }
 
 ///|
@@ -75,6 +76,7 @@ fn new_element_state(kind : NodeKind, name : String) -> ElementState {
     trailing: None,
     children_: [],
     parent_: None,
+    sibling_hint: 0,
   }
 }
 
@@ -469,18 +471,23 @@ pub fn Element::child(self : Element, name : String) -> Element? {
 ///|
 fn Element::following_sibling(self : Element, name : String?) -> Element? {
   if self.parent() is Some(parent) {
-    let mut found = false
-    for id in parent.state().children_ {
-      let sibling = self.handle(id)
-      if found &&
-        (
-          name == None ||
-          (sibling.state().kind is Tag && name == Some(sibling.state().name))
-        ) {
-        return Some(sibling)
+    let siblings = parent.state().children_
+    let state = self.state()
+    let mut index = state.sibling_hint
+    // Edits can shift the prefetched node or move it to a different parent.
+    if siblings.get(index) != Some(self.id) {
+      index = 0
+      while index < siblings.length() && siblings[index] != self.id {
+        index += 1
       }
-      if id == self.id {
-        found = true
+      state.sibling_hint = index
+    }
+    for i = index + 1; i < siblings.length(); i = i + 1 {
+      let sibling = parent.handle(siblings[i])
+      let next = sibling.state()
+      if name == None || (next.kind is Tag && name == Some(next.name)) {
+        next.sibling_hint = i
+        return Some(sibling)
       }
     }
   }
@@ -671,28 +678,36 @@ pub fn Element::remove_node(
 }
 
 ///|
-/// Deep copy; no descendants or attributes are shared with the source.
-pub fn Element::clone(self : Element) -> Element raise JUnitError {
-  fn copy_fields(source : Element, target : Element) -> Unit {
-    for attribute in source.state().attributes {
-      target.state().attributes.push(attribute)
-    }
-    for ns in source.state().namespaces {
-      target.state().namespaces.push(ns)
-    }
-    target.state().default_tag = source.state().default_tag
-    for (key, value) in source.state().attribute_prefixes {
-      target.state().attribute_prefixes[key] = value
-    }
-    target.state().prefix = source.state().prefix
-    target.state().value = source.state().value
-    target.state().trailing = source.state().trailing
+fn copy_element_fields(source : Element, target : Element) -> Unit {
+  for attribute in source.state().attributes {
+    target.state().attributes.push(attribute)
   }
+  for ns in source.state().namespaces {
+    target.state().namespaces.push(ns)
+  }
+  target.state().default_tag = source.state().default_tag
+  for (key, value) in source.state().attribute_prefixes {
+    target.state().attribute_prefixes[key] = value
+  }
+  target.state().prefix = source.state().prefix
+  target.state().value = source.state().value
+  target.state().trailing = source.state().trailing
+}
+
+///|
+fn Element::clone_shell(self : Element) -> Element raise JUnitError {
   let root = allocate_element(self.state().kind, self.state().name)
-  copy_fields(self, root)
+  copy_element_fields(self, root)
   for declaration in self.required_namespaces() {
     root.state().namespaces.push(declaration)
   }
+  root
+}
+
+///|
+/// Deep copy; no descendants or attributes are shared with the source.
+pub fn Element::clone(self : Element) -> Element raise JUnitError {
+  let root = self.clone_shell()
   let pending = [(self, root)]
   while pending.pop() is Some((source, target)) {
     for id in source.state().children_ {
@@ -702,7 +717,7 @@ pub fn Element::clone(self : Element) -> Element raise JUnitError {
         child.state().kind,
         child.state().name,
       )
-      copy_fields(child, copied)
+      copy_element_fields(child, copied)
       target.state().children_.push(copied.id)
       copied.state().parent_ = Some(target.id)
       pending.push((child, copied))

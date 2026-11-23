@@ -6,6 +6,10 @@ import {
 }
 
 // Values
+pub fn merge_shards(Iter[JUnitXml], flavor? : Flavor) -> JUnitXml raise
+
+pub fn[T] merge_shards_from(Iter[T], (T) -> JUnitXml raise, flavor? : Flavor) -> JUnitXml raise
+
 pub fn output_element(OutputKind, text? : String?) -> Element raise JUnitError
 
 // Errors

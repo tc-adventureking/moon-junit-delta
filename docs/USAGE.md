@@ -10,7 +10,7 @@ node bin/junit-delta.mjs merge --glob "reports/*.xml" --suite-name build -
 node bin/junit-delta.mjs verify --glob "reports/*.xml"
 ```
 
-`merge` 将最后一个参数作为输出，其余为输入。输出位置的 `-` 写 stdout，输入位置的 `-` 读取 stdin，一次命令可读取一次。合并会归并等价套件并更新统计；`--suite-name` 设置输出根的 name。Node.js 可将 `testcase` 直接写在 `testsuites` 下，CLI 保留这些用例在根下的位置，并把它们纳入验证和统计。这一点与 junitparser 5.0.3 的 CLI 有意不同。
+`merge` 将最后一个参数作为输出，其余为输入。输出位置的 `-` 写 stdout，输入位置的 `-` 读取 stdin，一次命令可读取一次。合并在每一层分别归并等价的兄弟套件，保留无类名用例的套件路径和根级用例的相对顺序，并重算各层统计。每次出现的用例都计入一次。首次出现的套件提供属性、properties 和附加元数据，后续匹配套件追加用例与子套件。`--suite-name` 设置输出根的 name。Node.js 可将 `testcase` 直接写在 `testsuites` 下，CLI 保留这些用例在根下的位置，并把它们纳入验证和统计。这一点与 junitparser 5.0.3 的 CLI 有意不同。
 
 `verify` 遍历实际用例。发现未跳过的失败或错误时，stderr 给出输入和用例名并返回 1。多个分片可以包含空报告，整批至少需要一个用例。兼容 junitparser 的多结果规则，同一用例同时含 `skipped` 和 `failure` 或 `error` 时，`verify` 按跳过处理。合并统计则分别计入每个最终结果，结果数之和可能超过用例数。套件时长会按用例重新计算。
 

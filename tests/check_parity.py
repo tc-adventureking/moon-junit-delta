@@ -1,10 +1,13 @@
 """Run both implementations on the compatibility cases documented in docs/JUNIT.md."""
+from collections import Counter
 from importlib.metadata import version
 from pathlib import Path
+from random import Random
 from subprocess import run
 import sys
 from tempfile import TemporaryDirectory
 from xml.etree.ElementTree import canonicalize
+import xml.etree.ElementTree as ET
 
 from junitparser import Failure, JUnitXml, TestCase, TestSuite, xunit2
 
@@ -50,6 +53,73 @@ def reference_reports():
     yield report
 
 
+def nested_reference_reports():
+    inputs = [
+        "<testsuites><testsuite name='s'><testcase name='a'/></testsuite></testsuites>",
+        "<testsuites><testsuite name='s'><testsuite name='inner'><testcase name='b'/></testsuite><testcase name='c'/></testsuite></testsuites>",
+    ]
+    left, right = (xunit2.JUnitXml.fromstring(xml) for xml in inputs)
+    yield left + right
+    yield left + left
+    left += right
+    yield left
+    yield right
+    left, right = (next(iter(xunit2.JUnitXml.fromstring(xml))) for xml in inputs)
+    yield left + right
+    left += right
+    yield left
+    yield right
+
+
+def check_nested_shards(directory):
+    rng = Random(501)
+    paths = []
+    expected = Counter()
+
+    def populate(parent, path, depth):
+        for _ in range(5):
+            if depth < 3 and rng.randrange(2):
+                name = rng.choice(["web", "api"])
+                populate(ET.SubElement(parent, "testsuite", name=name, tests="99"), (*path, name), depth + 1)
+            else:
+                name = rng.choice(["login", "read", "write"])
+                case = ET.SubElement(parent, "testcase", name=name)
+                kind = rng.choice(["failure", "skipped", "error", "passed"])
+                if kind != "passed":
+                    ET.SubElement(case, kind)
+                expected[(path, name, kind)] += 1
+
+    for i in range(5):
+        root = ET.Element("testsuites")
+        populate(root, (), 0)
+        path = directory / f"nested-{i}.xml"
+        ET.ElementTree(root).write(path, encoding="utf-8")
+        paths.append(path)
+
+    def check(parent, path, actual):
+        children = parent.findall("testsuite")
+        names = [suite.attrib["name"] for suite in children]
+        assert len(set(names)) == len(names), (path, names)
+        counts = Counter()
+        for case in parent.findall("testcase"):
+            kind = case[0].tag if len(case) else "passed"
+            counts[kind] += 1
+            actual[(path, case.attrib["name"], kind)] += 1
+        for child in children:
+            counts.update(check(child, (*path, child.attrib["name"]), actual))
+        assert int(parent.attrib["tests"]) == counts.total()
+        for attr, kind in [("failures", "failure"), ("errors", "error"), ("skipped", "skipped")]:
+            assert int(parent.attrib[attr]) == counts[kind], (path, attr, counts)
+        return counts
+
+    for order in [paths, list(reversed(paths))]:
+        command = ["node", str(ROOT / "bin/junit-delta.mjs"), "merge", *order, "-"]
+        result = run(command, check=True, capture_output=True)
+        actual = Counter()
+        check(ET.fromstring(result.stdout), (), actual)
+        assert actual == expected
+
+
 def check_cli(directory):
     passing = directory / "pass.xml"
     failing = directory / "fail.xml"
@@ -74,11 +144,13 @@ def main():
     result = run(["moon", "run", "tests/parity", "--target", "js", "--deny-warn"],
                  cwd=ROOT, check=True, capture_output=True, encoding="utf-8")
     reports = result.stdout.splitlines()
-    for i, (actual, expected) in enumerate(zip(reports, reference_reports(), strict=True)):
+    expected_reports = [*reference_reports(), *nested_reference_reports()]
+    for i, (actual, expected) in enumerate(zip(reports, expected_reports, strict=True)):
         assert canonicalize(actual) == canonicalize(expected.tostring()), f"XML differs in case {i + 1}"
     with TemporaryDirectory() as temporary:
         check_cli(Path(temporary))
-    print("Matched junitparser 5.0.3 on 4 library scenarios, CLI merge and verify.")
+        check_nested_shards(Path(temporary))
+    print(f"Matched {len(reports)} upstream XML outputs and flat CLI merge/verify; nested shard invariants passed.")
 
 
 if __name__ == "__main__":
