@@ -85,6 +85,11 @@ test('merging nested shards keeps classless testcase identities and counts', t =
   const checked = run(dir, ['verify', 'merged.xml']);
   assert.equal(checked.status, 1);
   assert.match(checked.stderr, /failed testcase login/);
+  writeFileSync(join(dir, 'invalid.xml'), '<testsuite name="run"><testsuites><testsuite><testcase/></testsuite></testsuites></testsuite>');
+  const invalid = run(dir, ['merge', 'web.xml', 'invalid.xml', 'merged.xml']);
+  assert.equal(invalid.status, 1, invalid.stderr);
+  assert.match(invalid.stderr, /nested testsuites/);
+  assert.equal(readFileSync(join(dir, 'merged.xml'), 'utf8'), xml);
 });
 
 test('globbed dash filename and empty files do not turn into a passing check', t => {

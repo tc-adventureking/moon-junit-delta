@@ -36,6 +36,61 @@ priv struct ShardMerge {
 }
 
 ///|
+// The result has its own document and DTD. Carry the effective source values
+// into the copied nodes, including prefixed defaults and explicit overrides.
+fn materialize_shard_defaults(source : Element, copied : Element) -> Unit {
+  let state = source.state()
+  if state.defaults.get(state.default_tag) is Some(defaults) {
+    for (qualified, value) in defaults {
+      if qualified == "xmlns" || qualified.has_prefix("xmlns:") {
+        continue
+      }
+      let name = if qualified.find(":") is Some(colon) {
+        let prefix = qualified[:colon].to_owned()
+        let uri = source.namespace_uri(prefix)
+        guard uri is Some(uri) else { continue }
+        let expanded = "{" + uri + "}" + qualified[colon + 1:].to_owned()
+        if copied.attribute(expanded) == None {
+          copied.state().attribute_prefixes[expanded] = prefix
+        }
+        expanded
+      } else {
+        qualified
+      }
+      if copied.attribute(name) == None {
+        copied.state().attributes.push((name, value))
+      }
+    }
+  }
+}
+
+///|
+fn Element::append_shard_copy(
+  parent : Element,
+  source : Element,
+  shallow~ : Bool = false,
+) -> Element raise JUnitError {
+  let copy = if shallow { source.clone_shell() } else { source.clone() }
+  if !source.state().defaults.is_empty() {
+    let originals = source.iter()
+    for node in copy.iter() {
+      materialize_shard_defaults(originals.next().unwrap(), node)
+    }
+  }
+  // QName-valued text/attributes can refer to any source prefix. Only omit
+  // a declaration when the same prefix already denotes the same URI here.
+  let scope = parent.namespace_scope()
+  copy.state().namespaces.clear()
+  for binding in source.namespace_scope() {
+    if !scope.contains(binding) {
+      copy.state().namespaces.push(binding)
+    }
+  }
+  parent.attach_child(copy)
+  copy
+}
+
+///|
 fn ShardMerge::add_child(
   self : ShardMerge,
   parent : Element,
@@ -55,8 +110,7 @@ fn ShardMerge::add_child(
     let suite = match existing {
       Some(suite) => suite
       None => {
-        let suite = child.clone_shell()
-        parent.append(suite)
+        let suite = parent.append_shard_copy(child, shallow=true)
         if key is Some(k) {
           self.suites[k] = suite
         }
@@ -71,9 +125,13 @@ fn ShardMerge::add_child(
     if self.case_count > 1000000 {
       raise LimitExceeded("shard merge exceeds 1000000 cases")
     }
-    parent.append(child.clone())
+    ignore(parent.append_shard_copy(child))
+  } else if child.is_element() && child.tag() == "testsuites" {
+    raise InvalidFormat(
+      "nested testsuites is unsupported; use a testsuite for nested cases",
+    )
   } else if keep_metadata {
-    parent.append(child.clone())
+    ignore(parent.append_shard_copy(child))
   }
 }
 

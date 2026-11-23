@@ -223,6 +223,19 @@ fn xml_text(text : String, attribute~ : Bool = false) -> String {
 }
 
 ///|
+fn Element::namespace_uri(self : Element, prefix : String) -> String? {
+  if prefix == "xml" {
+    return Some("http://www.w3.org/XML/1998/namespace")
+  }
+  for (key, uri) in self.namespace_scope() {
+    if key == prefix {
+      return Some(uri)
+    }
+  }
+  None
+}
+
+///|
 fn Element::namespace_scope(self : Element) -> Array[(String, String)] {
   let lineage = [self]
   let mut parent = self.parent()

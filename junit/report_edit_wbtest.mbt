@@ -143,3 +143,59 @@ test "shard statistics honor xunit2, input ordering and fractional times" {
   suite.set_name(Some("changed"))
   assert_eq(source.element().to_xml(), before)
 }
+
+///|
+test "shards make DTD defaults explicit and preserve lexical namespace bindings" {
+  let source = JUnitXml::from_decoded(
+    "<!DOCTYPE testsuites [<!ATTLIST testsuite name CDATA 'default-suite'><!ATTLIST testcase name CDATA 'default-case' time CDATA '1.5' p:kind CDATA 'p:Type'>]><testsuites xmlns:p='urn:test'><testsuite><testcase/><testcase name='override' time='2'/></testsuite></testsuites>",
+  )
+  let other = JUnitXml::from_string(
+    "<testsuites xmlns:p='urn:other'><testsuite name='default-suite'><testcase name='third' kind='p:Type'><system-out>p:Text</system-out></testcase></testsuite></testsuites>",
+  )
+  let original = source.element().to_xml()
+  let merged = merge_shards([source, other].iter())
+  let saved = JUnitXml::from_decoded(merged.element().write_xml())
+  let suite = saved.suites().next().unwrap()
+  assert_eq(suite.name(), Some("default-suite"))
+  let cases = suite.cases().to_array()
+  assert_eq(cases.map(c => c.name()), [
+    Some("default-case"),
+    Some("override"),
+    Some("third"),
+  ])
+  assert_eq(suite.time(), Some(3.5))
+  assert_eq(cases[0].element().attribute("{urn:test}kind"), Some("p:Type"))
+  assert_true(cases[2].element().namespace_scope().contains(("p", "urn:other")))
+  assert_eq(source.element().to_xml(), original)
+}
+
+///|
+test "raw suite roots are accepted and a failed loader stops at the offending shard" {
+  let raw = JUnitXml::from_element(
+    Element::from_string(
+      "<testsuite name='raw'><testcase name='one'/></testsuite>",
+    ),
+  )
+  let before = raw.element().to_xml()
+  let merged = merge_shards([raw].iter())
+  assert_eq(merged.suites().next().unwrap().name(), Some("raw"))
+  assert_eq(merged.tests().unwrap().to_string(), "1")
+  let reads : Array[Int32] = []
+  try {
+    ignore(
+      merge_shards_from([0, 1, 2].iter(), i => {
+        reads.push(i)
+        if i == 1 {
+          raise InvalidFormat("invalid source")
+        }
+        raw
+      }),
+    )
+    fail("expected loader failure")
+  } catch {
+    InvalidFormat("invalid source") => ()
+    e => raise e
+  }
+  assert_eq(reads, [0, 1])
+  assert_eq(raw.element().to_xml(), before)
+}

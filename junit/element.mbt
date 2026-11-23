@@ -272,16 +272,7 @@ pub fn Element::attribute(self : Element, name : String) -> String? {
       }
       if uri != "" && attribute.find(":") is Some(colon) {
         let prefix = attribute[:colon].to_owned()
-        let attribute_uri = if prefix == "xml" {
-          Some("http://www.w3.org/XML/1998/namespace")
-        } else {
-          self
-          .namespace_scope()
-          .iter()
-          .filter(item => item.0 == prefix)
-          .next()
-          .map(item => item.1)
-        }
+        let attribute_uri = self.namespace_uri(prefix)
         if attribute[colon + 1:] == local_name && attribute_uri == Some(uri) {
           return Some(value)
         }
@@ -572,6 +563,12 @@ pub fn Element::append(
   self.check_insertion(child)
   child.retain_external_namespaces()
   child.remove_redundant_namespaces(self)
+  self.attach_child(child)
+}
+
+///|
+// The caller has checked the insertion and prepared namespace declarations.
+fn Element::attach_child(self : Element, child : Element) -> Unit {
   join_arenas(self.arena, child.arena)
   child.detach()
   self.state().children_.push(child.id)
