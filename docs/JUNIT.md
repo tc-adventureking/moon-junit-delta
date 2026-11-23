@@ -74,3 +74,16 @@ let xml = report.element().write_xml()
 - `JUnitXml::update_statistics()` 按套件汇总。对 Node 生成的混合布局调用 `update_statistics_with_root_cases()`，可将直接挂在根下的用例一并计入。CLI 使用后者；库原有归并和迭代方法遵循 junitparser 的套件规则。
 
 旧版根包有自己的有意差异：不可变 `JUnitDocument` 保留原始节点形式，比较 `Report` 采用整数微秒、最终结果归一和历史身份规则。不要将它们的归并结果当作 `junit` 模型的替代品。
+
+## 差异测试
+
+在仓库根目录的 Python 3.13 虚拟环境中运行以下命令。测试需要 MoonBit 与 Node.js 24，Python 依赖仅用于生成参考结果。
+
+```sh
+python -m pip install junitparser==5.0.3 lxml==6.1.1
+python tests/check_parity.py
+```
+
+脚本分别运行两个实现，比较创建报告、共享视图编辑、嵌套内容、统计与浮点时长、等价套件归并、xUnit2 及 XML 写回，并核对普通报告的 CLI 合并结果和验证退出码。Node 根级用例与空输入的 CLI 差异见[使用指南](USAGE.md)。
+
+删除套件时，从其直接父节点取得共享元素并调用 `parent.element().remove_node(suite.element())`，然后调用报告的 `update_statistics()` 更新计数。
