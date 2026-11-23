@@ -488,6 +488,14 @@ fn Element::following_sibling(self : Element, name : String?) -> Element? {
 }
 
 ///|
+/// The November 4 toolchain only has Iter::new; newer stable also accepts it
+/// as an alias of the Iter constructor.
+#warnings("-deprecated")
+fn[T] live_iterator(next : () -> T?) -> Iter[T] {
+  Iter::new(next)
+}
+
+///|
 /// Live iteration prefetches the next matching sibling before yielding.
 /// Moving or removing a prefetched node does not turn this into a snapshot.
 pub fn Element::iter_children(
@@ -496,7 +504,7 @@ pub fn Element::iter_children(
 ) -> Iter[Element] {
   let mut started = false
   let mut pending : Element? = None
-  Iter::new(fn() {
+  live_iterator(fn() {
     if !started {
       started = true
       for id in self.state().children_ {

@@ -180,8 +180,7 @@ fn py_float(text : String) -> Double raise JUnitError {
   if magnitude == -324 {
     // Decide the first two subnormal bins exactly, independently of the
     // standard converter's underflow error convention.
-    let numerator = @bigint.BigInt::from_string(String::from_array(significant)) <<
-      1075
+    let numerator = decimal_integer(String::from_array(significant)) << 1075
     let denominator = @bigint.BigInt::from_int(10).pow(
       @bigint.BigInt::from_int(significant.length() - 1 - magnitude),
     )
@@ -345,6 +344,13 @@ fn py_float_attr(value : String?) -> Double? raise JUnitError {
 }
 
 ///|
+fn decimal_integer(digits : String) -> @bigint.BigInt raise JUnitError {
+  @string.parse_bigint(digits[:]) catch {
+    _ => raise InvalidValue("invalid decimal integer")
+  }
+}
+
+///|
 fn py_int(text : String) -> @bigint.BigInt raise JUnitError {
   let normalized = numeric_normalize(text)
   let chars = normalized.to_array()
@@ -365,7 +371,7 @@ fn py_int(text : String) -> @bigint.BigInt raise JUnitError {
     }
   }
   let digits = String::from_array(chars[start:].to_owned())
-  let value = @bigint.BigInt::from_string(digits)
+  let value = decimal_integer(digits)
   if chars[0] == '-' {
     -value
   } else {

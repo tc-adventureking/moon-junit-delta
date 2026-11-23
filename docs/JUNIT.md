@@ -17,6 +17,8 @@ report.update_statistics()
 let xml = report.element().write_xml()
 ```
 
+删除套件时，从其直接父节点取得共享元素并调用 `parent.element().remove_node(suite.element())`，然后调用报告的 `update_statistics()` 更新计数。
+
 `set_results` 接收最终结果；`add_interim_result` 追加结果节点。以 `flavor=XUnit2` 创建或解析时，`interim_results`、`rerun_failures`、`flaky_errors` 等查询包含 xUnit2 重试记录，`stack_trace` 等访问器读写其子节点。`group`、`id`、`package_`、`file`、`log`、`url`、`version` 有对应方法。
 
 `Element` 支持任意属性、子元素、混合文本、注释和处理指令，名称采用 `{namespace}local` 形式。`element()` 取得共享节点；`from_element` 将节点包装成所需视图。`read_attribute` / `write_attribute` 接受自定义类型转换函数。CDATA 在通用模型中合并为文本；需要保留 CDATA 节点时使用原始 `JUnitDocument` API。
@@ -66,4 +68,22 @@ let xml = report.element().write_xml()
 - 解析上限为 1,000 万 UTF-16 单元、200 万事件、128 层元素、每元素 1,024 个属性；字节输入上限为 2,000 万字节。统计最多处理 100 万用例，迭代合并最多处理 100 万套件。超过限额抛错，失败前已完成的修改不回滚。
 - 自加使用有界快照，避免上游部分输入不终止。共享节点池在最后一个句柄释放时回收；长期保留句柄会保留池中的已删除节点，可通过深拷贝形成独立池。
 
+### 套件操作与深拷贝的边界
+
+- `TestSuite::merged` 和 `merge_inplace` 合并等价套件时沿用 junitparser 5.0.3：右侧嵌套用例既被复制到合并套件，也保留在复制的子套件中，统计会计两次。需要按树结构拼接独立套件时可使用根包的 `merge_documents`。
+- 删除嵌套用例时，在其直接所属的 `TestSuite` 上调用 `remove_case`。在外层套件调用时，孙级用例会保留。
+- `clone()` 复制元素子树；文档根外的注释、处理指令、DTD 及其提供的默认属性不随副本保留。
+- `JUnitXml::update_statistics()` 按套件汇总。对 Node 生成的混合布局调用 `update_statistics_with_root_cases()`，可将直接挂在根下的用例一并计入。CLI 使用后者；库原有归并和迭代方法遵循 junitparser 的套件规则。
+
 旧版根包有自己的有意差异：不可变 `JUnitDocument` 保留原始节点形式，比较 `Report` 采用整数微秒、最终结果归一和历史身份规则。不要将它们的归并结果当作 `junit` 模型的替代品。
+
+## 差异测试
+
+在仓库根目录的 Python 3.13 虚拟环境中运行以下命令。测试需要 MoonBit 与 Node.js 24，Python 依赖仅用于生成参考结果。
+
+```sh
+python -m pip install junitparser==5.0.3 lxml==6.1.1
+python tests/check_parity.py
+```
+
+脚本分别运行两个实现，比较创建报告、共享视图编辑、嵌套内容、统计与浮点时长、等价套件归并、xUnit2 及 XML 写回，并核对普通报告的 CLI 合并结果和验证退出码。Node 根级用例与空输入的 CLI 差异见[使用指南](USAGE.md)。

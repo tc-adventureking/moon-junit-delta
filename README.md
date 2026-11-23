@@ -14,7 +14,7 @@ MoonBit 通用 JUnit XML 创建、读取、编辑、写回与比较库。通用�
 ## 安装与使用
 
 ```bash
-moon add tc-adventureking/junit_delta@0.4.0
+moon add tc-adventureking/junit_delta@0.5.0
 ```
 
 在 `moon.pkg` 中为下面的消费测试导入：
@@ -31,6 +31,7 @@ test "create and edit report" {
   let report = @junit.JUnitXml::new()
   report.add_suite(suite)
 
+  case.element().set_attribute("file", Some("tests/login.mbt"))
   case.set_results([@junit.TestResult::new(Failure, message=Some("timeout"))])
   report.update_statistics()
   assert_false(case.is_passed())
@@ -38,6 +39,8 @@ test "create and edit report" {
 
   let xml = report.element().write_xml(pretty=true)
   let restored = @junit.JUnitXml::from_decoded(xml)
+  let saved = restored.suites().next().unwrap().cases().next().unwrap()
+  assert_eq(saved.element().attribute("file"), Some("tests/login.mbt"))
   assert_eq(restored.failures().unwrap().to_string(), "1")
 }
 ```
@@ -48,11 +51,15 @@ test "create and edit report" {
 
 ## 示例与测试
 
-安装 MoonBit 工具链后在仓库运行编辑示例：
+安装 MoonBit 和 Node.js 24 后，可在源码仓库运行四后端回归、CLI 测试和编辑示例：
 
 ```bash
+moon test --deny-warn --target all
+node --test tests/cli.test.mjs
 moon run examples/edit --target wasm-gc
 ```
+
+要复核与 junitparser 5.0.3 的行为对应关系，可运行[差异测试](docs/JUNIT.md#差异测试)。
 
 在导入此库的消费项目中，将上方用例保存为 `report_test.mbt` 后运行：
 
@@ -72,7 +79,9 @@ node bin/junit-delta.mjs verify combined.xml
 node bin/junit-delta.mjs compare --baseline baseline.xml --candidate current.xml --format json
 ```
 
-`merge` / `verify` 退出码：`0` 成功，`1` 测试结果未通过或输入/运行错误，`2` 参数错误。`compare` / `jsonl` 退出码：`0` 通过，`1` 门禁违规，`2` 输入或运行错误。[命令与 JSONL 协议](docs/USAGE.md)。
+0.5.0 的 CLI 会保留并检查 Node.js 写在根节点下的用例。每个 glob 必须匹配输入，合并时会从 glob 匹配结果中排除输出文件。
+
+`merge` / `verify` 退出码：`0` 成功，`1` 测试结果未通过或输入/运行错误，`2` 参数或启动器错误。`compare` / `jsonl` 退出码：`0` 通过，`1` 门禁违规，`2` 输入或运行错误。[命令与 JSONL 协议](docs/USAGE.md)。
 
 ## 许可
 

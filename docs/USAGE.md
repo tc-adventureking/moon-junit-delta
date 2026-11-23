@@ -10,7 +10,13 @@ node bin/junit-delta.mjs merge --glob "reports/*.xml" --suite-name build -
 node bin/junit-delta.mjs verify --glob "reports/*.xml"
 ```
 
-`merge` 将最后一个参数作为输出，其余为输入；`-` 输出到 stdout，输入位置的 `-` 读取 stdin。等价套件按通用 `junit` 模型归并并重算统计，`--suite-name` 设置输出根的 name。`verify` 遍历结果，遇到未跳过的失败或错误即返回 1；它不更新统计。两条命令成功返回 0，运行/输入错误返回 1，参数错误返回 2。
+`merge` 将最后一个参数作为输出，其余为输入。输出位置的 `-` 写 stdout，输入位置的 `-` 读取 stdin，一次命令可读取一次。合并会归并等价套件并更新统计；`--suite-name` 设置输出根的 name。Node.js 可将 `testcase` 直接写在 `testsuites` 下，CLI 保留这些用例在根下的位置，并把它们纳入验证和统计。这一点与 junitparser 5.0.3 的 CLI 有意不同。
+
+`verify` 遍历实际用例。发现未跳过的失败或错误时，stderr 给出输入和用例名并返回 1。多个分片可以包含空报告，整批至少需要一个用例。兼容 junitparser 的多结果规则，同一用例同时含 `skipped` 和 `failure` 或 `error` 时，`verify` 按跳过处理。合并统计则分别计入每个最终结果，结果数之和可能超过用例数。套件时长会按用例重新计算。
+
+启用 `--glob` 后，每个输入模式至少要匹配一份可用报告，单独的 `-` 仍读取 stdin。`merge` 会从各模式的匹配中排除输出文件及其文件系统别名，允许把输出保存在分片目录内并重复运行。无匹配或只匹配输出时返回 1，原输出保留。显式传入空 XML 报告 `<testsuites/>` 可以合并出零用例报告。
+
+两个命令成功返回 0，输入、读取、写入错误或验证失败返回 1，参数或启动器错误返回 2。
 
 `--glob` 由 Node 宿主展开；点文件须显式匹配，`**` 与 Python 默认非递归 glob 一致，只匹配一层。需要保留通配符时按上述方式加引号。文件内容默认支持 UTF-8/UTF-16，其他编码使用 Node 的解码能力；不存在统一编码全覆盖承诺。比较命令和 JSONL 保持 UTF-8 输入及原退出码。
 
@@ -96,7 +102,7 @@ CI 维护者将原有 auth、billing、audit 用例迁入两个分片；当前�
 | `diff_config(...)` | 校验门禁与耗时配置 |
 | `to_json / to_json_string / to_markdown / to_text` | 渲染比较结果 |
 | `evaluate_request(text)` | 无 I/O 的 JSON 请求入口 |
-| `run_cli(args, read, write?, glob?)` | 可注入读取函数的 CLI 核心 |
+| `run_cli(args, read, write?, glob?, same_file?)` | 宿主可注入读写、glob 和文件同一性判断；默认按路径字符串相等比较 |
 
 完整签名见[公开 API](../pkg.generated.mbti)。比较 JSON 的 [Schema](../schemas/report.schema.json) 对应 `schema_version:1`，只约束比较 report，不约束请求或原始读取结果。
 
@@ -121,4 +127,4 @@ XML 采用 UTF-8，可含 BOM；拒绝 DTD、损坏结构、重复属性以及�
 
 结果消息最多保留 2,048 UTF-16 单元，截断附 `message_truncated`；忽略 system-out/system-err。Markdown 默认展示前 50 条变化或注记，JSON 保留全部条目，超限报 `output_limit`。`to_json` 预算按默认紧凑 `stringify()` 计量，调用方额外缩进或修改后需管理新的大小。
 
-读取行为参考 junitparser 5.0.3。完整 XML 创建、编辑、写回和扩展保留使用新增的 [JUnitDocument 接口](JUNIT_XML.md)；本页的消息截断与命名空间限制只描述比较接口。自动重跑、基准下载及 GitHub 网络集成仍由宿主管理。
+读取行为参考 junitparser 5.0.3。完整 XML 创建、编辑、写回和扩展保留使用根包的 [JUnitDocument 接口](JUNIT_XML.md)；本页的消息截断与命名空间限制只描述比较接口。自动重跑、基准下载及 GitHub 网络集成仍由宿主管理。

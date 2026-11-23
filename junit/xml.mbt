@@ -586,7 +586,7 @@ fn Element::next_descendant(self : Element, anchor : Element) -> Element? {
 /// Live, depth-first iteration, including this node.
 pub fn Element::iter(self : Element) -> Iter[Element] {
   let mut pending = Some(self)
-  Iter::new(fn() {
+  live_iterator(fn() {
     let result = pending
     if pending is Some(node) {
       pending = node.next_descendant(self)
