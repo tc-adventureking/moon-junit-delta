@@ -318,7 +318,7 @@ pub fn Properties::equal(
 fn Element::properties(self : Element) -> Iter[Property] {
   let mut started = false
   let mut iterator : Iter[Property]? = None
-  Iter::new(fn() {
+  live_iterator(fn() {
     if !started {
       started = true
       iterator = self
@@ -602,7 +602,7 @@ fn suite_iterator(node : Element) -> SuiteIterator {
 /// Direct cases first, then each nested suite recursively; handles stay live.
 pub fn TestSuite::cases(self : TestSuite) -> Iter[TestCase] {
   let stack = [suite_iterator(self.element_)]
-  Iter::new(fn() {
+  live_iterator(fn() {
     while stack.last() is Some(frame) {
       if !frame.direct_done {
         if frame.cases.next() is Some(node) {
