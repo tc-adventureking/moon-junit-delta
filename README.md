@@ -21,7 +21,7 @@ MoonBit 通用 JUnit XML 创建、读取、编辑、写回与比较库。通用�
 
 ```bash
 moon update
-moon add tc-adventureking/junit_delta@0.6.0
+moon add tc-adventureking/junit_delta@0.6.1
 ```
 
 在同一目录的 `moon.pkg` 中添加测试依赖。
@@ -75,8 +75,6 @@ moon run examples/edit --target wasm-gc
 
 最后一条命令会输出 JUnit XML，其中 `service` 套件的 `tests="1"`，`login` 用例的 `file="login.mbt"`。回归测试覆盖 XML 解析与写回、可变和不可变编辑、分片与重试归并、历史差异、门禁退出码及 JSONL 协议。
 
-要复核与 junitparser 5.0.3 的行为对应关系，可运行[差异测试](docs/JUNIT.md#差异测试)。
-
 ## JUnit 报告 CLI
 
 源码启动器需要 Node.js 24 和 MoonBit 工具链。`merge`、`verify` 支持 `--glob` 和标准输入 `-`，`merge` 的输出路径 `-` 表示 stdout：
@@ -87,7 +85,7 @@ node bin/junit-delta.mjs verify combined.xml
 node bin/junit-delta.mjs compare --baseline baseline.xml --candidate current.xml --format json
 ```
 
-0.6.0 的 CLI 使用 `@junit.merge_shards` 的规则归并分片。无类名用例保留原套件路径，Node.js 的根级用例保留在根下；合并后会重算每层套件的数量、失败数和耗时。每个 glob 必须匹配输入，合并时会从 glob 匹配结果中排除输出文件。
+CLI 使用 `@junit.merge_shards` 的规则归并分片。无类名用例保留原套件路径，Node.js 的根级用例保留在根下；合并后会重算每层套件的数量、失败数和耗时。每个 glob 必须匹配输入，合并时会从 glob 匹配结果中排除输出文件。
 
 `merge` / `verify` 退出码：`0` 成功，`1` 测试结果未通过或输入/运行错误，`2` 参数或启动器错误。`compare` / `jsonl` 退出码：`0` 通过，`1` 门禁违规，`2` 输入或运行错误。[命令与 JSONL 协议](docs/USAGE.md)。
 
