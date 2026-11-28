@@ -23,6 +23,26 @@ function run(dir, args, input) {
   return result;
 }
 
+test('JSONL keeps processing after an error and returns the highest exit code', t => {
+  const dir = workspace(t);
+  const passing = { xml: '<testsuite><testcase name="login"/></testsuite>' };
+  const failing = { xml: '<testsuite><testcase name="login"><failure/></testcase></testsuite>' };
+  const input = [
+    JSON.stringify({ baselines: [passing], candidate: failing }),
+    '{',
+    '',
+    JSON.stringify({ op: 'parse', document: passing }),
+  ].join('\n');
+  const result = run(dir, ['jsonl'], input);
+  assert.equal(result.status, 2, result.stderr);
+  const replies = result.stdout.trimEnd().split('\n').map(line => JSON.parse(line));
+  assert.deepEqual(replies.map(({ ok, exit_code }) => [ok, exit_code]), [
+    [true, 1], [false, 2], [true, 0],
+  ]);
+  assert.equal(replies[0].report.entries[0].category, 'new_failure');
+  assert.equal(replies[2].report.cases[0].name, 'login');
+});
+
 test('a real Node JUnit report keeps its failing top-level test', t => {
   const dir = workspace(t);
   writeFileSync(join(dir, 'sample.mjs'), "import test from 'node:test';\ntest('top failure', () => { throw Error('expected failure'); });\n");

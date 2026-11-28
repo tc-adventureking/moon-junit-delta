@@ -2,6 +2,8 @@
 
 MoonBit 通用 JUnit XML 创建、读取、编辑、写回与比较库。通用报告接口以 junitparser 5.0.3 为行为参考，支持 wasm、wasm-gc、JavaScript 和 native；底层 XML 复用 Milky2018/xml。
 
+[Mooncakes 包与 API](https://mooncakes.io/docs/tc-adventureking/junit_delta/) · [持续集成](https://github.com/tc-adventureking/moon-junit-delta/actions/workflows/test.yml)
+
 ## 功能
 
 - **报告与套件 `JUnitXml` / `TestSuite`**：创建、解析、用例管理、properties、嵌套套件、惰性统计、归并和普通/pretty 写回。
@@ -13,15 +15,22 @@ MoonBit 通用 JUnit XML 创建、读取、编辑、写回与比较库。通用�
 
 ## 安装与使用
 
+最低编译器版本为 `moonc 1.0.0-rc1`。复现 CI 环境时，将环境变量 `MOONBIT_INSTALL_VERSION` 设为 `1.0.0-rc1+3c0520448` 后运行官方安装脚本，再用 `moonc -v` 核对版本。[MoonBit 安装指南](https://www.moonbitlang.com/download/)
+
+在自己的 MoonBit 模块目录中安装库。如果要从空目录复现，先创建 `moon.mod`，写入一行 `name = "example/junit_demo"`。然后运行
+
 ```bash
+moon update
 moon add tc-adventureking/junit_delta@0.6.0
 ```
 
-在 `moon.pkg` 中为下面的消费测试导入：
+在同一目录的 `moon.pkg` 中添加测试依赖。
 
 ```moonbit
 import { "tc-adventureking/junit_delta/junit" @junit, } for "test"
 ```
+
+将下面的用例保存为同目录下的 `report_test.mbt`。
 
 ```moonbit
 test "create and edit report" {
@@ -45,29 +54,28 @@ test "create and edit report" {
 }
 ```
 
+运行 `moon test --deny-warn --target wasm-gc`。示例会创建一个用例，将它标记为失败，再读回 XML，检查文件名和失败数。
+
 `from_string` 用于不含编码声明的 Unicode XML；带声明的字节输入使用 `from_bytes`，宿主已解码的文本使用 `from_decoded`。`pretty=true` 会调整混合内容的空白；通用模型与原不可变文档的统计、归并规则不同。
 
 [完整 API](junit/pkg.generated.mbti) · [Python 对照与差异](docs/JUNIT.md) · [不可变 XML](docs/JUNIT_XML.md) · [使用场景](docs/USAGE.md)
 
 ## 示例与测试
 
-安装 MoonBit 和 Node.js 24 后，可在源码仓库运行四后端回归、CLI 测试和编辑示例：
+安装 MoonBit、Node.js 24 和适用于 native 后端的 C 工具链后，在源码仓库根目录运行
 
 ```bash
+moon update
+moon check --deny-warn --target all
+moon build --deny-warn --release --target all
 moon test --deny-warn --target all
 node --test tests/cli.test.mjs
 moon run examples/edit --target wasm-gc
 ```
 
+最后一条命令会输出 JUnit XML，其中 `service` 套件的 `tests="1"`，`login` 用例的 `file="login.mbt"`。回归测试覆盖 XML 解析与写回、可变和不可变编辑、分片与重试归并、历史差异、门禁退出码及 JSONL 协议。
+
 要复核与 junitparser 5.0.3 的行为对应关系，可运行[差异测试](docs/JUNIT.md#差异测试)。
-
-在导入此库的消费项目中，将上方用例保存为 `report_test.mbt` 后运行：
-
-```bash
-moon test --deny-warn --target all
-```
-
-编辑示例演示用例构建、属性更新、统计和 XML 写回；上方消费测试验证共享视图编辑、失败统计及格式化输出后的重新解析。
 
 ## JUnit 报告 CLI
 
