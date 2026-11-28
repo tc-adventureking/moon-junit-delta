@@ -1,6 +1,6 @@
 name = "tc-adventureking/junit_delta"
 
-version = "0.6.0"
+version = "0.6.1"
 
 license = "MIT AND Apache-2.0"
 

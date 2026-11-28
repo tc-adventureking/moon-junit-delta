@@ -84,13 +84,12 @@ let xml = report.element().write_xml()
 
 旧版根包有自己的有意差异：不可变 `JUnitDocument` 保留原始节点形式，比较 `Report` 采用整数微秒、最终结果归一和历史身份规则。不要将它们的归并结果当作 `junit` 模型的替代品。
 
-## 差异测试
+## 查看参考场景的 XML 输出
 
-在仓库根目录的 Python 3.13 虚拟环境中运行以下命令。测试需要 MoonBit 与 Node.js 24，Python 依赖仅用于生成参考结果。
+在源码仓库中运行以下 MoonBit 示例，可查看创建、编辑、归并和 xUnit2 场景生成的 XML。每行对应一份报告。
 
 ```sh
-python -m pip install junitparser==5.0.3 lxml==6.1.1
-python tests/check_parity.py
+moon run tests/parity --target js
 ```
 
-脚本分别运行两个实现，比较创建报告、共享视图编辑、嵌套内容、统计与浮点时长、等价套件归并、xUnit2 及 XML 写回，并核对普通报告的 CLI 合并结果和验证退出码。另外与上游比较嵌套套件的加法、原地加法和输入状态，并通过独立生成的分片检验 CLI 的套件路径、用例多重集与逐层计数。Node 根级用例与空输入的 CLI 差异见[使用指南](USAGE.md)。
+Node 根级用例与空输入的 CLI 行为见[使用指南](USAGE.md)。
